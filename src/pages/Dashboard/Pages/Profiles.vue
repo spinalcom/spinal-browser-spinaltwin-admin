@@ -1,0 +1,392 @@
+<template>
+  <div class="md-layout">
+    <div class="md-layout-item">
+      <md-card>
+        <md-card-header class="md-card-header-icon md-card-header-primary">
+          <div class="card-icon">
+            <md-icon>group</md-icon>
+          </div>
+          <h4 class="title" v-if="display === false">
+            Liste de profiles
+          </h4>
+          <h4 class="title" v-if="display === true">
+            Ajouter un profile d'utilisateurs
+          </h4>
+          <md-button
+            class="md-primary pull-right"
+            @click="displayAdd"
+            v-if="display === false && usr.group_user.level > 50"
+            >Ajouter</md-button
+          >
+        </md-card-header>
+        <md-card-content>
+          <md-table
+            v-if="display === false"
+            :value="queriedData"
+            :md-sort.sync="currentSort"
+            :md-sort-order.sync="currentSortOrder"
+            :md-sort-fn="customSort"
+            class="paginated-table table-striped table-hover"
+          >
+            <md-table-toolbar>
+              <md-field>
+                <label for="pages">Par page</label>
+                <md-select v-model="pagination.perPage" name="pages">
+                  <md-option
+                    v-for="item in pagination.perPageOptions"
+                    :key="item"
+                    :label="item"
+                    :value="item"
+                  >
+                    {{ item }}
+                  </md-option>
+                </md-select>
+              </md-field>
+
+              <!--<md-field>
+                <md-input
+                  type="search"
+                  class="mb-3"
+                  clearable
+                  style="width: 200px"
+                  placeholder="Search"
+                  v-model="searchQuery"
+                >
+                </md-input>
+              </md-field>-->
+            </md-table-toolbar>
+
+            <hr />
+            <md-table-row slot="md-table-row" slot-scope="{ item }">
+              <md-table-cell md-label="Nom" md-sort-by="name">{{
+                item.name
+              }}</md-table-cell>
+              <md-table-cell md-label="Applications d'accès" md-sort-by="appList">
+                  <label v-for="app in item.appList" :key="app">
+                    {{ app }},
+                  </label>
+                  </md-table-cell>
+                  <md-table-cell md-label="Contextes d'accès" md-sort-by="contextList">
+                    <label v-for="app in item.contextList" :key="app">
+                        {{ app }},
+                    </label>
+                  </md-table-cell>
+              <md-table-cell md-label="Rôles d'accès" md-sort-by="roleList">
+                  <label v-for="role in item.roleList" :key="role">
+                    {{ role }}, 
+                  </label>
+              </md-table-cell>
+            </md-table-row>
+          </md-table>
+          <ValidationObserver ref="form" v-if="display === true">
+            <form @submit.prevent="validate">
+              <div>
+                <div class="md-layout">
+                  <div class="md-layout-item md-size-60 mt-4 md-small-size-100">
+                    <ValidationProvider
+                      name="name"
+                      rules="required"
+                      v-slot="{ passed, failed }"
+                    >
+                      <md-field
+                        :class="[
+                          { 'md-error': failed },
+                          { 'md-valid': passed },
+                          { 'md-form-group': true }
+                        ]"
+                      >
+                        <label>Intitulé</label>
+                        <md-input v-model="enterprise.name" type="text">
+                        </md-input>
+
+                        <slide-y-down-transition>
+                          <md-icon class="error" v-show="failed">close</md-icon>
+                        </slide-y-down-transition>
+                        <slide-y-down-transition>
+                          <md-icon class="success" v-show="passed"
+                            >done</md-icon
+                          >
+                        </slide-y-down-transition>
+                      </md-field>
+                    </ValidationProvider>
+                    <br>
+                    <ValidationProvider
+                      name="appList"
+                      rules="required"
+                    >
+                      <multiselect v-model="value"
+                      :options="options"
+                      :multiple="true"
+                      group-values="libs"
+                      group-label="language"
+                      :group-select="true"
+                      placeholder="Sélectionner les applications autorisés"
+                      track-by="name" label="name">
+                      <span slot="noResult">Oops! No elements found. Consider changing the search query.</span>
+
+                      </multiselect>
+                      <!--<md-field
+                        :class="[
+                          { 'md-error': failed },
+                          { 'md-valid': passed },
+                          { 'md-form-group': true }
+                        ]"
+                      >
+                        <label>{{ $t("sigle") }}</label>
+                        <md-input v-model="enterprise.sigle" type="text">
+                        </md-input>
+
+                        <slide-y-down-transition>
+                          <md-icon class="error" v-show="failed">close</md-icon>
+                        </slide-y-down-transition>
+                        <slide-y-down-transition>
+                          <md-icon class="success" v-show="passed"
+                            >done</md-icon
+                          >
+                        </slide-y-down-transition>
+                      </md-field>-->
+                    </ValidationProvider>
+                    <br>
+                    <ValidationProvider
+                      name="buildContextList"
+                      rules="required"
+                    >
+                      <multiselect v-model="value"
+                      :options="options"
+                      :multiple="true"
+                      group-values="libs"
+                      group-label="language"
+                      :group-select="true"
+                      placeholder="Sélectionner les contextes autorisés"
+                      track-by="name" label="name">
+                      <span slot="noResult">Oops! No elements found. Consider changing the search query.</span>
+
+                      </multiselect>
+                    </ValidationProvider>
+                    <br>
+                    <ValidationProvider
+                      name="roleList"
+                      rules="required"
+                    >
+                      <multiselect v-model="value"
+                      :options="options"
+                      :multiple="true"
+                      group-values="libs"
+                      group-label="language"
+                      :group-select="true"
+                      placeholder="Sélectionner un ou plusieurs niveau d'accès"
+                      track-by="name" label="name">
+                      <span slot="noResult">Oops! No elements found. Consider changing the search query.</span>
+
+                      </multiselect>
+                    </ValidationProvider>
+                  </div>
+                </div>
+              </div>
+              <br />
+              <md-card-actions>
+                <div>
+                  <md-button @click="cancelAdd" class="btn-next md-danger">
+                    Annuler
+                  </md-button>
+                  <md-button type="submit" class="btn-next md-primary">
+                    Enregistrer
+                  </md-button>
+                </div>
+              </md-card-actions>
+            </form>
+          </ValidationObserver>
+        </md-card-content>
+        <md-card-actions md-alignment="space-between" v-if="display === false">
+          <div class="">
+            <p class="card-category">
+              Showing {{ from + 1 }}
+              to {{ to }}
+              of {{ total }}
+              entries
+            </p>
+          </div>
+          <pagination
+            class="pagination-no-border pagination-primary"
+            v-model="pagination.currentPage"
+            :per-page="pagination.perPage"
+            :total="total"
+          >
+          </pagination>
+        </md-card-actions>
+      </md-card>
+    </div>
+  </div>
+</template>
+<style src="vue-multiselect/dist/vue-multiselect.min.css"></style>
+<script>
+import { Pagination } from "@/components";
+import Fuse from "fuse.js";
+import { SlideYDownTransition } from "vue2-transitions";
+import Multiselect from "vue-multiselect";
+// import Places from 'vue-places'
+export default {
+  name: "Profiles",
+  components: { Pagination, SlideYDownTransition, Multiselect },
+  data() {
+    return {
+      display: false,
+      valid: true,
+      image: "",
+      usr: {},
+      currentSort: "name",
+      currentSortOrder: "asc",
+      pagination: {
+        perPage: 5,
+        currentPage: 1,
+        perPageOptions: [5, 10, 25, 50],
+        total: 0
+      },
+      options: [
+        {
+          language: 'Javascript',
+          libs: [
+            { name: 'Vue.js', category: 'Front-end' },
+            { name: 'Adonis', category: 'Backend' }
+          ]
+        },
+        {
+          language: 'Ruby',
+          libs: [
+            { name: 'Rails', category: 'Backend' },
+            { name: 'Sinatra', category: 'Backend' }
+          ]
+        },
+        {
+          language: 'Other',
+          libs: [
+            { name: 'Laravel', category: 'Backend' },
+            { name: 'Phoenix', category: 'Backend' }
+          ]
+        }
+      ],
+      value: [],
+      searchQuery: "",
+      propsToSearch: ["name", "sigle"],
+      searchedData: [],
+      fuseSearch: null,
+      rules: [
+        value =>
+          !value ||
+          value.size < 2000000 ||
+          "Avatar size should be less than 2 MB!"
+      ],
+      select: null,
+      profiles: [
+            { 
+              name: "Access read/write to DATA ROOM and SPACE CENTER",
+              appList: [ "DATA ROOM", "SPACE CENTER"],
+              contextList: [ "Spatial", "Ticket"],
+              roleList: [ "Lecture", "Ecriture"],
+
+            },
+            { 
+              name: "Access read to SPACE CENTER",
+              appList: [ "SPACE CENTER"],
+              contextList: [ "Réseau", "Equipment"],
+              roleList: [ "Lecture" ],
+
+            },
+      ],
+      enterprise: {
+        name: "",
+        sigle: ""
+      }
+    };
+  },
+  computed: {
+    /***
+     * Returns a page from the searched data or the whole data. Search is performed in the watch section below
+     */
+    queriedData() {
+      let result = this.profiles;
+      if (this.searchedData.length > 0) {
+        result = this.searchedData;
+      }
+      return result.slice(this.from, this.to);
+    },
+    to() {
+      let highBound = this.from + this.pagination.perPage;
+      if (this.total < highBound) {
+        highBound = this.total;
+      }
+      return highBound;
+    },
+    from() {
+      return this.pagination.perPage * (this.pagination.currentPage - 1);
+    },
+    total() {
+      return this.searchedData.length > 0
+        ? this.searchedData.length
+        : this.profiles.length;
+    }
+  },
+  created: function() {
+    if (localStorage.getItem("userConnected")) {
+      this.usr = JSON.parse(localStorage.getItem("userConnected"));
+    }
+  },
+  methods: {
+    customSort(value) {
+      return value.sort((a, b) => {
+        const sortBy = this.currentSort;
+        if (this.currentSortOrder === "desc") {
+          return a[sortBy].localeCompare(b[sortBy]);
+        }
+        return b[sortBy].localeCompare(a[sortBy]);
+      });
+    },
+    displayAdd() {
+      this.display = true;
+    },
+    cancelAdd() {
+      this.display = false;
+      this.$refs.form.reset();
+    },
+    handleImage(e) {
+      const selectedImage = e.target.files[0];
+      this.createBase64Image(selectedImage);
+    },
+    createBase64Image(fileObject) {
+      const reader = new FileReader();
+      reader.addEventListener("load", event => {
+        this.user.picture_base64 = reader.result.toString();
+      });
+      reader.readAsDataURL(fileObject);
+    },
+  },
+  mounted() {
+    // Fuse search initialization.
+    this.fuseSearch = new Fuse(this.profiles, {
+      keys: ["name", "sigle"],
+      threshold: 0.3
+    });
+  },
+  watch: {
+    /**
+     * Searches through the table data by a given query.
+     * NOTE: If you have a lot of data, it's recommended to do the search on the Server Side and only display the results here.
+     * @param value of the query
+     */
+    searchQuery(value) {
+      let result = this.profiles;
+      if (value !== "") {
+        result = this.fuseSearch.search(this.searchQuery);
+      }
+      this.searchedData = result;
+    }
+  }
+};
+</script>
+<style lang="css" scoped>
+.md-card .md-card-actions {
+  border: 0;
+  margin-left: 20px;
+  margin-right: 20px;
+}
+</style>
