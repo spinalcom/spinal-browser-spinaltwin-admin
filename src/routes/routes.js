@@ -1,11 +1,11 @@
-import DashboardLayout from "@/pages/Dashboard/Layout/DashboardLayout.vue";
+import DashboardLayout from "../pages/Dashboard/Layout/DashboardLayout.vue";
 
 // Dashboard pages
-import Dashboard from "@/pages/Dashboard/Dashboard.vue";
+import Dashboard from "../pages/Dashboard/Dashboard.vue";
 
-import Profiles from "@/pages/Dashboard/Pages/Profiles.vue";
-import Users from "@/pages/Dashboard/Pages/Users.vue";
-import Roles from "@/pages/Dashboard/Pages/Roles.vue";
+import Profiles from "../pages/Dashboard/Pages/Profiles.vue";
+import Users from "../pages/Dashboard/Pages/Users.vue";
+import Roles from "../pages/Dashboard/Pages/Roles.vue";
 
 const routes = [
   {

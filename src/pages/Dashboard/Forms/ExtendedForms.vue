@@ -286,7 +286,7 @@
 </template>
 
 <script>
-import { Slider } from "@/components";
+import { Slider } from "../../../components";
 export default {
   components: {
     Slider

@@ -1,5 +1,5 @@
 // Notifications plugin. Used on Notifications page
-import Notifications from "@/components/NotificationPlugin";
+import Notifications from "./components/NotificationPlugin";
 // A plugin file where you could register global components used across the app
 import GlobalComponents from "./globalComponents";
 // A plugin file where you could register global directives

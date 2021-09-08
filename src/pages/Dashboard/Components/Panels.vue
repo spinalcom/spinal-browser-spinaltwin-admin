@@ -251,8 +251,8 @@
   </div>
 </template>
 <script>
-import { Tabs } from "@/components";
-import { Collapse } from "@/components";
+import { Tabs } from "../../../components";
+import { Collapse } from "../../../components";
 
 export default {
   components: {

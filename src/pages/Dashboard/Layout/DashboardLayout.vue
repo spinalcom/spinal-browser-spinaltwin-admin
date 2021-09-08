@@ -110,11 +110,6 @@ export default {
     };
   },
   created: function() {
-    this.usr = JSON.parse(localStorage.getItem("userConnected"));
-    if (!this.usr) {
-      this.$router.push({ name: "Login" });
-    }
-    sessionStorage.clear("idBuilding");
   },
   methods: {
     toggleSidebar() {

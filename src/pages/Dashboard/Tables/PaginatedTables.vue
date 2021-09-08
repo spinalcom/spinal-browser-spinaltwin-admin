@@ -115,7 +115,7 @@
 </template>
 
 <script>
-import { Pagination } from "@/components";
+import { Pagination } from "../../../components";
 import users from "./users";
 import Fuse from "fuse.js";
 import Swal from "sweetalert2";

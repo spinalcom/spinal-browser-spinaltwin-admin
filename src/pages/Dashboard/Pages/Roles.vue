@@ -9,23 +9,17 @@
           <h4 class="title" v-if="display === false">
             Liste des niveaux d'accès
           </h4>
-          <h4 class="title" v-if="display === true">
+          <!--<h4 class="title" v-if="display === true">
             Ajouter un niveau d'accès
           </h4>
-          <md-button
-            class="md-primary pull-right"
-            @click="displayAdd"
-            v-if="display === false && usr.group_user.level > 50"
-            >Ajouter</md-button
+          <md-button class="md-primary pull-right" @click="displayAdd('add')"
+            >Ajouter</md-button-->
           >
         </md-card-header>
         <md-card-content>
           <md-table
             v-if="display === false"
             :value="queriedData"
-            :md-sort.sync="currentSort"
-            :md-sort-order.sync="currentSortOrder"
-            :md-sort-fn="customSort"
             class="paginated-table table-striped table-hover"
           >
             <md-table-toolbar>
@@ -42,27 +36,11 @@
                   </md-option>
                 </md-select>
               </md-field>
-
-              <!--<md-field>
-                <md-input
-                  type="search"
-                  class="mb-3"
-                  clearable
-                  style="width: 200px"
-                  placeholder="Search"
-                  v-model="searchQuery"
-                >
-                </md-input>
-              </md-field>-->
             </md-table-toolbar>
             <hr />
             <md-table-row slot="md-table-row" slot-scope="{ item }">
-              <md-table-cell md-label="Nom du rôle">{{
-                item.name
-              }}</md-table-cell>
-              <md-table-cell md-label="Nom du rôle">{{
-                item.name
-              }}</md-table-cell>
+              <md-table-cell md-label="Intitulé">{{ item.name }}</md-table-cell>
+              <md-table-cell> </md-table-cell>
             </md-table-row>
           </md-table>
           <ValidationObserver ref="form" v-if="display === true">
@@ -70,30 +48,10 @@
               <div>
                 <div class="md-layout">
                   <div class="md-layout-item md-size-60 mt-4 md-small-size-100">
-                    <ValidationProvider
-                      name="name"
-                      rules="required"
-                      v-slot="{ passed, failed }"
-                    >
-                      <md-field
-                        :class="[
-                          { 'md-error': failed },
-                          { 'md-valid': passed },
-                          { 'md-form-group': true }
-                        ]"
-                      >
+                    <ValidationProvider name="name">
+                      <md-field>
                         <label>Libellé</label>
-                        <md-input v-model="enterprise.name" type="text">
-                        </md-input>
-
-                        <slide-y-down-transition>
-                          <md-icon class="error" v-show="failed">close</md-icon>
-                        </slide-y-down-transition>
-                        <slide-y-down-transition>
-                          <md-icon class="success" v-show="passed"
-                            >done</md-icon
-                          >
-                        </slide-y-down-transition>
+                        <md-input v-model="role.name" type="text"> </md-input>
                       </md-field>
                     </ValidationProvider>
                   </div>
@@ -105,7 +63,7 @@
                   <md-button @click="cancelAdd" class="btn-next md-danger">
                     Annuler
                   </md-button>
-                  <md-button type="submit" class="btn-next md-primary">
+                  <md-button @click="saveRole" class="btn-next md-primary">
                     Enregistrer
                   </md-button>
                 </div>
@@ -116,9 +74,7 @@
         <md-card-actions md-alignment="space-between" v-if="display === false">
           <div class="">
             <p class="card-category">
-              Showing {{ from + 1 }}
-              to {{ to }}
-              of {{ total }}
+              Showing {{ from + 1 }} to {{ to }} of {{ total }}
               entries
             </p>
           </div>
@@ -135,8 +91,15 @@
   </div>
 </template>
 <script>
-import { Pagination } from "@/components";
+import { Pagination } from "../../../components";
 import Fuse from "fuse.js";
+import { SpinalGraphService } from "spinal-env-viewer-graph-service";
+import { SpinalTwinServiceRole } from "spinal-service-spinaltwin-admin";
+import { spinalIO } from "../../../services/spinalIO";
+import {
+  ROLE_LIST_CONTEXT,
+  SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST
+} from "../../../../constant";
 // import { SlideYDownTransition } from "vue2-transitions";
 // import Places from 'vue-places'
 export default {
@@ -167,24 +130,11 @@ export default {
           "Avatar size should be less than 2 MB!"
       ],
       select: null,
-      roles: [
-          {
-              name: "Read"
+      roles: [],
+      role: {
+        name: ""
       },
-      {
-              name: "Write"
-      },
-      {
-              name: "Delete"
-      },
-      {
-              name: "Administrator"
-      }
-      ],
-      enterprise: {
-        name: "",
-        sigle: ""
-      }
+      roleContext: null
     };
   },
   computed: {
@@ -214,9 +164,16 @@ export default {
         : this.roles.length;
     }
   },
-  created: function() {
-    if (localStorage.getItem("userConnected")) {
-      this.usr = JSON.parse(localStorage.getItem("userConnected"));
+  created: async function() {
+    const url = localStorage.getItem("digitalGraphURL");
+    if (SpinalGraphService.getGraph() === undefined) {
+      const graph = await spinalIO.load(
+        localStorage.getItem("urlSpinalTwinGraph")
+      );
+      await SpinalGraphService.setGraph(graph);
+    }
+    if (url) {
+      await this.getRoles();
     }
   },
   methods: {
@@ -229,24 +186,57 @@ export default {
         return b[sortBy].localeCompare(a[sortBy]);
       });
     },
-    displayAdd() {
+    displayAdd(menu = "", item = null) {
       this.display = true;
+      if (menu == "edit" && item != null) {
+        this.role = item;
+      }
+      if (menu == "add") {
+        this.role = {
+          name: null
+        };
+      }
+    },
+    async getRoles() {
+      this.roleContext = SpinalGraphService.getContext(ROLE_LIST_CONTEXT);
+      const rules = await SpinalGraphService.getChildrenInContext(
+        this.roleContext.info.id.get(),
+        this.roleContext.info.id.get()
+      );
+      if (rules.length > 0) {
+        rules.map(res => {
+          let data = {
+            id: null,
+            name: null
+          };
+          data.id = res.id.get();
+          data.name = res.name.get();
+          this.roles.push(data);
+        });
+      }
+      console.log(this.roles);
+    },
+    async saveRole() {
+      console.log(this.role.id.get());
+      if (this.role.id.get()) {
+        console.log(this.role.name);
+        const res = SpinalTwinServiceRole.updateRole(
+          this.role.name,
+          this.role.id.get()
+        );
+        console.log(res);
+      } else {
+        if (this.role.name) {
+          await SpinalTwinServiceRole.createRole(this.role);
+        }
+      }
+      this.display = false;
+      this.getRoles();
     },
     cancelAdd() {
       this.display = false;
       this.$refs.form.reset();
-    },
-    handleImage(e) {
-      const selectedImage = e.target.files[0];
-      this.createBase64Image(selectedImage);
-    },
-    createBase64Image(fileObject) {
-      const reader = new FileReader();
-      reader.addEventListener("load", event => {
-        this.user.picture_base64 = reader.result.toString();
-      });
-      reader.readAsDataURL(fileObject);
-    },
+    }
   },
   mounted() {
     // Fuse search initialization.
