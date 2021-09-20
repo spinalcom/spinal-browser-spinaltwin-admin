@@ -447,6 +447,7 @@ export default {
       ],
       select: null,
       profileData: {
+        id: null,
         name: "",
         appList: [],
         buildContextList: []
@@ -509,20 +510,21 @@ export default {
       await SpinalGraphService.setGraph(graph);
     }
     if (url) {
+      console.log(url);
       this.digitalGraph = await spinalIO.load(url);
-
+      console.log(this.digitalGraph);
       list = this.digitalGraph.children.Ref.hasContext.children;
       for (i; i < list.length; i++) {
         this.digitalContextList.push(list[i]);
       }
-      console.log(this.digitalContextList);
       this.profileContext = SpinalGraphService.getContext(
         USER_PROFILE_LIST_CONTEXT
       );
+      console.log(this.profileContext);
 
       await this.getApp();
-      await this.getUserProfile();
       await this.getRoles();
+      await this.getUserProfile();
     }
   },
   methods: {
@@ -659,10 +661,22 @@ export default {
     },
     async getRoles() {
       const roleContext = SpinalGraphService.getContext(ROLE_LIST_CONTEXT);
-      this.roleList = await SpinalGraphService.getChildrenInContext(
+      const rules = await SpinalGraphService.getChildrenInContext(
         roleContext.info.id.get(),
         roleContext.info.id.get()
       );
+      if (rules.length > 0) {
+        rules.map(res => {
+          let data = {
+            id: null,
+            name: null
+          };
+          data.id = res.id.get();
+          data.name = res.name.get();
+          this.roleList.push(data);
+        });
+      }
+      console.log(this.roleList);
     },
     async getApp() {
       const appContext = SpinalGraphService.getContext(

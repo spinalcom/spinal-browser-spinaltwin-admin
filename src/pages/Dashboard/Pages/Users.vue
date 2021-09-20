@@ -57,11 +57,11 @@
               <md-table-cell md-label="Email" md-sort-by="email">{{
                 item.email
               }}</md-table-cell>
-              <md-table-cell
+              <!-- <md-table-cell
                 md-label="Profil d'utilisateur"
                 md-sort-by="userProfileId"
                 >{{ item.userProfileId.name }}</md-table-cell
-              >
+              >-->
               <md-table-cell md-label="Actions">
                 <md-icon @click.native="displayAdd('edit', item)">edit</md-icon>
               </md-table-cell>
@@ -199,12 +199,11 @@ import {
   USER_LIST_CONTEXT,
   USER_PROFILE_LIST_CONTEXT
 } from "../../../../constant";
+import axios from "axios";
 import { spinalIO } from "../../../services/spinalIO";
 import { SpinalGraphService } from "spinal-env-viewer-graph-service";
 import { SpinalTwinServiceUser } from "spinal-service-spinaltwin-admin";
-/*import { extend } from "vee-validate";
-import { required } from "vee-validate/dist/rules";
-extend("required", required);*/
+import * as generator from "generate-password";
 export default {
   name: "Users",
   components: { Pagination, Multiselect },
@@ -237,6 +236,7 @@ export default {
       userData: {
         firstname: "",
         name: "",
+        password: "",
         email: "",
         userProfileId: null
       },
@@ -327,8 +327,8 @@ export default {
             id: res.id.get(),
             firstname: res.firstname.get(),
             name: res.name.get(),
-            email: res.email.get(),
-            userProfileId: res.userProfileId.get()
+            email: res.email.get()
+            // userProfileId: res.userProfileId.get()
           };
 
           this.users.push(data);
@@ -353,10 +353,28 @@ export default {
         );
         console.log(res);
       } else {
+        this.userData.password = generator.generate({
+          length: 10,
+          numbers: true
+        });
+        const serverHost = window.location.origin;
+        console.log(serverHost);
         SpinalTwinServiceUser.createUser(this.userData);
+        return axios
+          .post(`/sendRegisterMail`, {
+            params: {
+              name: this.userData.name,
+              firstname: this.userData.firstname,
+              email: this.userData.email,
+              password: this.userData.password
+            }
+          })
+          .then(response => {
+            this.display = false;
+            this.getUser();
+            console.log(response);
+          });
       }
-      this.display = false;
-      this.getUser();
     },
     cancelAdd() {
       this.display = false;
