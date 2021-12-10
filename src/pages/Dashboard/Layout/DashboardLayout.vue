@@ -3,7 +3,7 @@
     class="wrapper"
     :class="[
       { 'nav-open': $sidebar.showSidebar },
-      { rtl: $route.meta.rtlActive }
+      { rtl: $route.meta.rtlActive },
     ]"
   >
     <notifications></notifications>
@@ -18,18 +18,26 @@
           :link="{
             name: 'Digital Twin',
             icon: 'dashboard',
-            path: '/dashboard'
+            path: '/dashboard',
           }"
         >
         </sidebar-item>
         <sidebar-item
-          :link="{ name: 'Profiles', icon: 'person', path: '/profiles' }"
+          :link="{
+            name: 'Profile utilisateur',
+            icon: 'person',
+            path: '/profiles',
+          }"
+        ></sidebar-item>
+        <sidebar-item
+          :link="{
+            name: 'Profile application',
+            icon: 'apps',
+            path: '/appProfile',
+          }"
         ></sidebar-item>
         <sidebar-item
           :link="{ name: 'Rôles', icon: 'lock', path: '/roles' }"
-        ></sidebar-item>
-        <sidebar-item
-          :link="{ name: 'Utilisateurs', icon: 'people', path: '/users' }"
         ></sidebar-item>
       </template>
     </side-bar>
@@ -109,8 +117,7 @@ export default {
       sidebarImg: true
     };
   },
-  created: function() {
-  },
+  created: function() {},
   methods: {
     toggleSidebar() {
       if (this.$sidebar.showSidebar) {

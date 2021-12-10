@@ -99,7 +99,7 @@ import { spinalIO } from "../../../services/spinalIO";
 import {
   ROLE_LIST_CONTEXT,
   SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST
-} from "../../../../constant";
+} from "../../../constant";
 // import { SlideYDownTransition } from "vue2-transitions";
 // import Places from 'vue-places'
 export default {

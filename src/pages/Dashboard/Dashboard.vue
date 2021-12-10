@@ -109,7 +109,7 @@ import {
   DATA_LIST_CONTEXT,
   ADD_DIGITALTWIN,
   SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST
-} from "../../../constant";
+} from "../../constant";
 import { spinalIO } from "../../services/spinalIO";
 import { SpinalGraphService } from "spinal-env-viewer-graph-service";
 import { Model } from "spinal-core-connectorjs_type";
@@ -140,12 +140,14 @@ export default {
       const url = atob(this.$route.query.path);
       localStorage.setItem("urlSpinalTwinGraph", url);
       this.urlSpinalTwinAdmin = localStorage.getItem("urlSpinalTwinGraph");
+      console.log(this.urlSpinalTwinAdmin);
     }
   },
   created: async function() {
     const graph = await spinalIO.load(
       localStorage.getItem("urlSpinalTwinGraph")
     );
+    console.log(graph);
     await SpinalGraphService.setGraph(graph);
 
     this.dataListContext = SpinalGraphService.getContext(DATA_LIST_CONTEXT);

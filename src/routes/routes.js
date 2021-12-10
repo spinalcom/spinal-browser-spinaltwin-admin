@@ -4,6 +4,7 @@ import DashboardLayout from "../pages/Dashboard/Layout/DashboardLayout.vue";
 import Dashboard from "../pages/Dashboard/Dashboard.vue";
 
 import Profiles from "../pages/Dashboard/Pages/Profiles.vue";
+import AppProfile from "../pages/Dashboard/Pages/AppProfile.vue";
 import Users from "../pages/Dashboard/Pages/Users.vue";
 import Roles from "../pages/Dashboard/Pages/Roles.vue";
 
@@ -26,6 +27,11 @@ const routes = [
         path: "profiles",
         name: "Profiles",
         components: { default: Profiles }
+      },
+      {
+        path: "appProfile",
+        name: "AppProfile",
+        components: { default: AppProfile }
       },
       {
         path: "roles",

@@ -406,14 +406,17 @@ import Fuse from "fuse.js";
 import { spinalIO } from "../../../services/spinalIO";
 import { SlideYDownTransition } from "vue2-transitions";
 import Multiselect from "vue-multiselect";
-import { SpinalGraphService } from "spinal-env-viewer-graph-service";
+import {
+  SpinalGraph,
+  SpinalGraphService
+} from "spinal-env-viewer-graph-service";
 import { SpinalTwinServiceUserProfile } from "spinal-service-spinaltwin-admin";
 import {
   USER_PROFILE_LIST_CONTEXT,
   ROLE_LIST_CONTEXT,
   SPINALTWIN_DESCRIPTION_CONTEXT,
   SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST
-} from "../../../../constant";
+} from "../../../constant";
 // import Places from 'vue-places'
 export default {
   name: "Profiles",
@@ -461,6 +464,7 @@ export default {
         data: null,
         role: null
       },
+      digitalGraph: SpinalGraph,
       sState: ""
     };
   },
@@ -512,8 +516,8 @@ export default {
     if (url) {
       console.log(url);
       this.digitalGraph = await spinalIO.load(url);
-      console.log(this.digitalGraph);
-      list = this.digitalGraph.children.Ref.hasContext.children;
+      console.log(await this.digitalGraph.getChildren());
+      list = await this.digitalGraph.getChildren();
       for (i; i < list.length; i++) {
         this.digitalContextList.push(list[i]);
       }
@@ -710,16 +714,30 @@ export default {
     async saveProfile() {
       this.profiles = [];
       console.log(this.profileData);
+      const graphContext = new SpinalGraph("GraphContext");
+      if (this.profileData.buildContextList.length > 0) {
+        this.profileData.buildContextList.forEach(async element => {
+          const contxNode = await this.digitalGraph.getContext(
+            element.data.name
+          );
+          graphContext.addContext(contxNode);
+        });
+      }
       if (this.profileData.id) {
         const res = SpinalTwinServiceUserProfile.updateUserProfile(
           this.profileData,
-          this.profileData.id
+          this.profileData.id,
+          graphContext
         );
         console.log(res);
       } else {
-        await SpinalTwinServiceUserProfile.createUserProfile(this.profileData);
+        await SpinalTwinServiceUserProfile.createUserProfile(
+          this.profileData,
+          graphContext
+        );
       }
       this.display = false;
+      this.sState = null;
       this.getUserProfile();
     },
     cancelAdd() {

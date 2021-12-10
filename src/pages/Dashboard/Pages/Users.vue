@@ -198,7 +198,7 @@ import Multiselect from "vue-multiselect";
 import {
   USER_LIST_CONTEXT,
   USER_PROFILE_LIST_CONTEXT
-} from "../../../../constant";
+} from "../../../constant";
 import axios from "axios";
 import { spinalIO } from "../../../services/spinalIO";
 import { SpinalGraphService } from "spinal-env-viewer-graph-service";
@@ -353,27 +353,24 @@ export default {
         );
         console.log(res);
       } else {
-        this.userData.password = generator.generate({
+        console.log(this.userData);
+        /*this.userData.password = generator.generate({
           length: 10,
           numbers: true
         });
-        const serverHost = window.location.origin;
-        console.log(serverHost);
         SpinalTwinServiceUser.createUser(this.userData);
         return axios
           .post(`/sendRegisterMail`, {
-            params: {
-              name: this.userData.name,
-              firstname: this.userData.firstname,
-              email: this.userData.email,
-              password: this.userData.password
-            }
+            name: this.userData.name,
+            firstname: this.userData.firstname,
+            email: this.userData.email,
+            password: this.userData.password
           })
           .then(response => {
             this.display = false;
             this.getUser();
             console.log(response);
-          });
+          });*/
       }
     },
     cancelAdd() {
