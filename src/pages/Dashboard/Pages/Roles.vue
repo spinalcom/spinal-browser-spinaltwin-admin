@@ -13,8 +13,7 @@
             Ajouter un niveau d'accès
           </h4>
           <md-button class="md-primary pull-right" @click="displayAdd('add')"
-            >Ajouter</md-button-->
-          >
+            >Ajouter</md-button>-->
         </md-card-header>
         <md-card-content>
           <md-table
@@ -173,6 +172,7 @@ export default {
       await SpinalGraphService.setGraph(graph);
     }
     if (url) {
+      console.log(url);
       await this.getRoles();
     }
   },

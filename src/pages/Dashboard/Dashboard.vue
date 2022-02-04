@@ -147,9 +147,9 @@ export default {
     const graph = await spinalIO.load(
       localStorage.getItem("urlSpinalTwinGraph")
     );
-    console.log(graph);
     await SpinalGraphService.setGraph(graph);
 
+    console.log(SpinalGraphService);
     this.dataListContext = SpinalGraphService.getContext(DATA_LIST_CONTEXT);
     console.log(this.dataListContext);
     this.getDigitalTwin();
@@ -157,24 +157,26 @@ export default {
     if (localStorage.getItem("nameDigitalTwinCurrent")) {
       this.nameDigitalTwin = localStorage.getItem("nameDigitalTwinCurrent");
       this.changeDGT = false;
-      console.log(this.nameDigitalTwin);
     }
   },
   methods: {
     getDigitalTwin() {
       console.log(this.dataListContext);
-      const result = SpinalGraphService.getChildren(
-        this.dataListContext.info.id.get()
-      )
-        .then(async res => {
-          this.digitalList = res;
-          console.log(this.digitalList);
-        })
-        .catch(e => {
-          console.error(e);
-          return Promise.reject(Error("Internal Server Error"));
-        });
-      return result;
+      if (this.dataListContext) {
+        const result = SpinalGraphService.getChildren(
+          this.dataListContext.info.id.get()
+        )
+          .then(async res => {
+            this.digitalList = res;
+            console.log(this.digitalList);
+          })
+          .catch(e => {
+            console.error(e);
+            return Promise.reject(Error("Internal Server Error"));
+          });
+
+        return result;
+      }
     },
     loadDigitalTwin() {
       localStorage.setItem("nameDigitalTwinCurrent", this.value.name.get());

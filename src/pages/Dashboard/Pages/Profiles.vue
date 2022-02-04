@@ -408,14 +408,14 @@ import { SlideYDownTransition } from "vue2-transitions";
 import Multiselect from "vue-multiselect";
 import {
   SpinalGraph,
-  SpinalGraphService
+  SpinalGraphService,
 } from "spinal-env-viewer-graph-service";
 import { SpinalTwinServiceUserProfile } from "spinal-service-spinaltwin-admin";
 import {
   USER_PROFILE_LIST_CONTEXT,
   ROLE_LIST_CONTEXT,
   SPINALTWIN_DESCRIPTION_CONTEXT,
-  SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST
+  SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST,
 } from "../../../constant";
 // import Places from 'vue-places'
 export default {
@@ -434,7 +434,7 @@ export default {
         perPage: 5,
         currentPage: 1,
         perPageOptions: [5, 10, 25, 50],
-        total: 0
+        total: 0,
       },
       options: [],
       value: [],
@@ -443,17 +443,17 @@ export default {
       searchedData: [],
       fuseSearch: null,
       rules: [
-        value =>
+        (value) =>
           !value ||
           value.size < 2000000 ||
-          "Avatar size should be less than 2 MB!"
+          "Avatar size should be less than 2 MB!",
       ],
       select: null,
       profileData: {
         id: null,
         name: "",
         appList: [],
-        buildContextList: []
+        buildContextList: [],
       },
       profiles: [],
       profileContext: null,
@@ -462,10 +462,10 @@ export default {
       appList: [],
       configData: {
         data: null,
-        role: null
+        role: null,
       },
       digitalGraph: SpinalGraph,
-      sState: ""
+      sState: "",
     };
   },
   computed: {
@@ -495,15 +495,15 @@ export default {
         : this.profiles.length;
     },
     digitalContextListComputed() {
-      return this.digitalContextList.map(res => {
+      return this.digitalContextList.map((res) => {
         return {
           id: res.info.id?.get(),
-          name: res.info.name?.get() ?? "no name"
+          name: res.info.name?.get() ?? "no name",
         };
       });
-    }
+    },
   },
-  created: async function() {
+  created: async function () {
     const url = localStorage.getItem("digitalGraphURL");
     let list = [];
     let i = 0;
@@ -544,7 +544,7 @@ export default {
     openConfig(section) {
       this.configData = {
         data: null,
-        role: null
+        role: null,
       };
       this.config = section;
     },
@@ -563,12 +563,12 @@ export default {
           name: null,
           appList: [],
           buildContextList: [],
-          roleList: []
+          roleList: [],
         };
       }
     },
     saveConfig(sect) {
-      const checkIndex = res => res.data.name === this.configData.data.name;
+      const checkIndex = (res) => res.data.name === this.configData.data.name;
 
       if (sect == "app") {
         console.log(this.configData);
@@ -581,7 +581,7 @@ export default {
           this.profileData.appList.push(this.configData);
           this.configData = {
             data: null,
-            role: null
+            role: null,
           };
         }
       }
@@ -595,7 +595,7 @@ export default {
           this.profileData.buildContextList.push(this.configData);
           this.configData = {
             data: null,
-            role: null
+            role: null,
           };
         }
       }
@@ -609,7 +609,7 @@ export default {
     deleteConfig(sect, item) {
       if (item) {
         this.configData = item;
-        const checkIndex = res => res.data.name === this.configData.data.name;
+        const checkIndex = (res) => res.data.name === this.configData.data.name;
         if (sect === "app") {
           const index = this.profileData.appList.findIndex(checkIndex);
           if (index != -1) {
@@ -633,28 +633,28 @@ export default {
         this.profileContext.info.id.get()
       );
       if (prof.length > 0) {
-        prof.map(res => {
+        prof.map((res) => {
           let data = {
             id: null,
             name: null,
             appList: null,
-            buildContextList: null
+            buildContextList: null,
           };
           data.id = res.id.get();
           data.name = res.name.get();
           if (res.appList.get()) {
-            data.appList = res.appList.get().map(el => {
+            data.appList = res.appList.get().map((el) => {
               return {
                 data: el.data,
-                role: el.role
+                role: el.role,
               };
             });
           }
           if (res.buildContextList.get()) {
-            data.buildContextList = res.buildContextList.get().map(el => {
+            data.buildContextList = res.buildContextList.get().map((el) => {
               return {
                 data: el.data,
-                role: el.role
+                role: el.role,
               };
             });
           }
@@ -670,10 +670,10 @@ export default {
         roleContext.info.id.get()
       );
       if (rules.length > 0) {
-        rules.map(res => {
+        rules.map((res) => {
           let data = {
             id: null,
-            name: null
+            name: null,
           };
           data.id = res.id.get();
           data.name = res.name.get();
@@ -695,18 +695,18 @@ export default {
     },
     computedApplList(data) {
       return Promise.all(
-        data.map(async el => {
+        data.map(async (el) => {
           const child = await SpinalGraphService.getChildren(el.id.get());
-          const ap = child.map(res => {
+          const ap = child.map((res) => {
             return {
               name: res.name._data,
-              id: res.id._data
+              id: res.id._data,
             };
           });
           return {
             nameGroup: el.name.get(),
             idGroup: el.id.get(),
-            apps: ap
+            apps: ap,
           };
         })
       );
@@ -716,7 +716,7 @@ export default {
       console.log(this.profileData);
       const graphContext = new SpinalGraph("GraphContext");
       if (this.profileData.buildContextList.length > 0) {
-        this.profileData.buildContextList.forEach(async element => {
+        this.profileData.buildContextList.forEach(async (element) => {
           const contxNode = await this.digitalGraph.getContext(
             element.data.name
           );
@@ -751,17 +751,17 @@ export default {
     },
     createBase64Image(fileObject) {
       const reader = new FileReader();
-      reader.addEventListener("load", event => {
+      reader.addEventListener("load", (event) => {
         this.user.picture_base64 = reader.result.toString();
       });
       reader.readAsDataURL(fileObject);
-    }
+    },
   },
   mounted() {
     // Fuse search initialization.
     this.fuseSearch = new Fuse(this.profiles, {
       keys: ["name", "sigle"],
-      threshold: 0.3
+      threshold: 0.3,
     });
   },
   watch: {
@@ -776,8 +776,8 @@ export default {
         result = this.fuseSearch.search(this.searchQuery);
       }
       this.searchedData = result;
-    }
-  }
+    },
+  },
 };
 </script>
 <style lang="css" scoped>

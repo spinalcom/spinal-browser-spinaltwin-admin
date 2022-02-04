@@ -100,13 +100,27 @@ class SpinalIO {
         console.log(user);
         if (user.username) {
           const serverHost = window.location.origin;
-          // this.getServerConfig().then( => {
-          const host = serverHost.replace(/https?:\/\//, '');
-          this.conn = spinalCore.connect(
-            `http://${user.username}:${user.password}@${host}/`
-          );
-          resolve();
-
+          return axios
+            .get(`${serverHost}/get_user_id`, {
+              params: {
+                u: user.username,
+                p: user.password,
+              },
+            })
+            .then(
+              (response) => {
+                let id = parseInt(response.data);
+                const host = serverHost.replace(/https?:\/\//, '');
+                this.conn = spinalCore.connect(
+                  `http://${id}:${user.password}@${host}/`
+                );
+                resolve();
+              },
+              () => {
+                // window.location = "/html/drive/";
+                reject('Authentication Connection Error');
+              }
+            );
           // });
         } else {
           // window.location = '/html/drive/';

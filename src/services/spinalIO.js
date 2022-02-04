@@ -31,11 +31,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.spinalIO = void 0;
 const spinal_core_connectorjs_type_1 = require("spinal-core-connectorjs_type");
 const crypt_1 = require("../utils/crypt");
 let $ = require('jquery');
+const axios_1 = __importDefault(require("axios"));
 function getParameterByName(name, url = window.location.href) {
     name = name.replace(/[[\]]/g, '\\$&');
     var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'), results = regex.exec(url);
@@ -104,10 +108,22 @@ class SpinalIO {
                 console.log(user);
                 if (user.username) {
                     const serverHost = window.location.origin;
-                    // this.getServerConfig().then( => {
-                    const host = serverHost.replace(/https?:\/\//, '');
-                    this.conn = spinal_core_connectorjs_type_1.spinalCore.connect(`http://${user.username}:${user.password}@${host}/`);
-                    resolve();
+                    return axios_1.default
+                        .get(`${serverHost}/get_user_id`, {
+                        params: {
+                            u: user.username,
+                            p: user.password,
+                        },
+                    })
+                        .then((response) => {
+                        let id = parseInt(response.data);
+                        const host = serverHost.replace(/https?:\/\//, '');
+                        this.conn = spinal_core_connectorjs_type_1.spinalCore.connect(`http://${id}:${user.password}@${host}/`);
+                        resolve();
+                    }, () => {
+                        // window.location = "/html/drive/";
+                        reject('Authentication Connection Error');
+                    });
                     // });
                 }
                 else {

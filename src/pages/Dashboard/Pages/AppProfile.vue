@@ -59,10 +59,10 @@
                 item.name
               }}</md-table-cell>
 
-              <md-table-cell md-label="Tags access" md-sort-by="tagsList">
+              <md-table-cell md-label="Routes d'accès" md-sort-by="tagsList">
                 <label v-for="(tag, index) in item.tagsList">
                   <template v-if="index > 0">,</template>
-                  {{ tag.data }}
+                  {{ tag.name }}
                 </label>
               </md-table-cell>
               <md-table-cell
@@ -151,75 +151,22 @@
                     <br />
                   </div>
                   <div
-                    class="md-layout-item md-size-50 mt-4 md-small-size-100"
+                    class="md-layout-item md-size-70 mt-4 md-small-size-100"
                     v-if="tagsList"
                   >
-                    <table class="table table-striped table-hover">
-                      <thead>
-                        <tr>
-                          <th style="font-size: 16px">Ontologies</th>
-                          <th style="font-size: 16px; color: cornflowerblue">
-                            GET
-                          </th>
-                          <th style="font-size: 16px; color: lawngreen">
-                            POST
-                          </th>
-                          <th style="font-size: 16px; color: orange">PUT</th>
-                          <th style="font-size: 16px; color: red">DELETE</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="i in tagsList">
-                          <td>{{ i }}</td>
-
-                          <td>
-                            <label class="form-checkbox">
-                              <input
-                                type="checkbox"
-                                :value="i"
-                                @input="configAPI(i, 'GET')"
-                              />
-                              <i class="form-icon"></i>
-                            </label>
-                          </td>
-
-                          <td>
-                            <label class="form-checkbox">
-                              <input
-                                type="checkbox"
-                                :value="i"
-                                @input="configAPI(i, 'POST')"
-                              />
-                              <i class="form-icon"></i>
-                            </label>
-                          </td>
-
-                          <td>
-                            <label class="form-checkbox">
-                              <input
-                                type="checkbox"
-                                :value="i"
-                                @input="configAPI(i, 'PUT')"
-                              />
-                              <i class="form-icon"></i>
-                            </label>
-                          </td>
-
-                          <td>
-                            <label class="form-checkbox">
-                              <input
-                                type="checkbox"
-                                :value="i"
-                                @input="configAPI(i, 'DELETE')"
-                              />
-                              <i class="form-icon"></i>
-                            </label>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+                    <vue-good-table
+                      :columns="columns"
+                      :rows="tagsList"
+                      :select-options="{ enabled: true }"
+                      :search-options="{ enabled: true }"
+                      :group-options="{
+                        enabled: true,
+                        collapsable: true,
+                      }"
+                      @on-selected-rows-change="selectRoutes"
+                    />
                   </div>
-                  <div class="md-layout-item md-size-50 mt-4 md-small-size-100">
+                  <div class="md-layout-item md-size-30 mt-4 md-small-size-100">
                     <table class="table table-striped table-hover">
                       <thead>
                         <tr>
@@ -242,7 +189,7 @@
                             <label class="form-checkbox">
                               <input
                                 type="checkbox"
-                                :value="i"
+                                :value="i.id"
                                 v-model="profileData.contextList"
                               />
                               <i class="form-icon"></i>
@@ -296,14 +243,15 @@ import { SlideYDownTransition } from "vue2-transitions";
 import Multiselect from "vue-multiselect";
 import {
   SpinalGraph,
-  SpinalGraphService
+  SpinalGraphService,
 } from "spinal-env-viewer-graph-service";
 import { SpinalTwinServiceAppProfile } from "spinal-service-spinaltwin-admin";
 import { APP_PROFILE_LIST_CONTEXT } from "../../../constant";
-// import Places from 'vue-places'
+import "vue-good-table/dist/vue-good-table.css";
+import { VueGoodTable } from "vue-good-table";
 export default {
   name: "AppProfile",
-  components: { Pagination, SlideYDownTransition, Multiselect },
+  components: { Pagination, SlideYDownTransition, Multiselect, VueGoodTable },
   data() {
     return {
       config: "",
@@ -317,7 +265,7 @@ export default {
         perPage: 5,
         currentPage: 1,
         perPageOptions: [5, 10, 25, 50],
-        total: 0
+        total: 0,
       },
       options: [],
       value: [],
@@ -326,16 +274,16 @@ export default {
       searchedData: [],
       fuseSearch: null,
       rules: [
-        value =>
+        (value) =>
           !value ||
           value.size < 2000000 ||
-          "Avatar size should be less than 2 MB!"
+          "Avatar size should be less than 2 MB!",
       ],
       profileData: {
         id: null,
         name: "",
         tagsList: [],
-        contextList: []
+        contextList: [],
       },
       profiles: [],
       profileContext: null,
@@ -344,17 +292,34 @@ export default {
       sState: "",
       contextSelected: [],
       selectAll: false,
+      selectAllRoutes: false,
+      selectedRoutes: [],
+      selected: [],
       configAccessAPI: {
         nameTag: null,
         rest: {
           GET: false,
           POST: false,
           PUT: false,
-          DELETE: false
-        }
+          DELETE: false,
+        },
       },
       tagsList: [],
-      fileSwagger: null
+      fileSwagger: null,
+      columns: [
+        {
+          label: "Routes",
+          field: "name",
+        },
+        {
+          label: "Scope",
+          field: "scope",
+        },
+        {
+          label: "Méthodes",
+          field: "method",
+        },
+      ],
     };
   },
   computed: {
@@ -384,15 +349,15 @@ export default {
         : this.profiles.length;
     },
     digitalContextListComputed() {
-      return this.digitalContextList.map(res => {
+      return this.digitalContextList.map((res) => {
         return {
           id: res.info.id?.get(),
-          name: res.info.name?.get() ?? "no name"
+          name: res.info.name?.get() ?? "no name",
         };
       });
-    }
+    },
   },
-  created: async function() {
+  created: async function () {
     const url = localStorage.getItem("digitalGraphURL");
     let list = [];
     let i = 0;
@@ -428,61 +393,31 @@ export default {
         return b[sortBy].localeCompare(a[sortBy]);
       });
     },
-    configAPI(item, rest = "") {
-      let res = {
-        nameTag: item,
-        rest: {
-          GET: false,
-          POST: false,
-          PUT: false,
-          DELETE: false
+    selectRoutes(params) {
+      console.log(params);
+      this.selectedRoutes = [];
+      this.profileData.tagsList = [];
+      if (!this.selectAllRoutes) {
+        for (let i in params.selectedRows) {
+          let res = {
+            name: params.selectedRows[i].name,
+            method: params.selectedRows[i].method,
+            scope: params.selectedRows[i].scope,
+          };
+          this.selectedRoutes.push(res);
         }
-      };
-      if (this.profileData.tagsList.length > 0) {
-        var index = this.profileData.tagsList.findIndex(x => x.nameTag == item);
-        if (index === -1) {
-          if (rest === "GET") {
-            res.rest.GET = true;
-          } else if (rest === "POST") {
-            res.rest.POST = true;
-          } else if (rest === "PUT") {
-            res.rest.PUT = true;
-          } else if (rest === "DELETE") {
-            res.rest.DELETE = true;
-          }
-          this.profileData.tagsList.push(res);
-        } else {
-          if (rest === "GET") {
-            this.profileData.tagsList[index].rest.GET = true;
-          } else if (rest === "POST") {
-            this.profileData.tagsList[index].rest.POST = true;
-          } else if (rest === "PUT") {
-            this.profileData.tagsList[index].rest.PUT = true;
-          } else if (rest === "DELETE") {
-            this.profileData.tagsList[index].rest.DELETE = true;
-          }
-        }
-      } else {
-        if (rest === "GET") {
-          res.rest.GET = true;
-        } else if (rest === "POST") {
-          res.rest.POST = true;
-        } else if (rest === "PUT") {
-          res.rest.PUT = true;
-        } else if (rest === "DELETE") {
-          res.rest.DELETE = true;
-        }
-        this.profileData.tagsList.push(res);
+        this.profileData.tagsList = this.selectedRoutes;
       }
     },
     select() {
+      this.selected = [];
       this.profileData.contextList = [];
+      console.log(this.selected);
       if (!this.selectAll) {
         for (let i in this.digitalContextListComputed) {
-          this.profileData.contextList.push(
-            this.digitalContextListComputed[i].id
-          );
+          this.selected.push(this.digitalContextListComputed[i].id);
         }
+        this.profileData.contextList = this.selected;
       }
     },
     displayAdd(menu = "", item = null) {
@@ -499,7 +434,7 @@ export default {
         this.profileData = {
           name: null,
           tagsList: [],
-          contextList: []
+          contextList: [],
         };
       }
     },
@@ -510,28 +445,29 @@ export default {
       );
       console.log(prof);
       if (prof.length > 0) {
-        prof.map(res => {
+        prof.map((res) => {
           let data = {
             id: null,
             name: null,
             tagsList: null,
-            contextList: null
+            contextList: null,
           };
           data.id = res.id.get();
           data.name = res.name.get();
           if (res.tagsList.get()) {
-            data.tagsList = res.tagsList.get().map(el => {
+            data.tagsList = res.tagsList.get().map((el) => {
               return {
-                data: el.nameTag,
-                rest: el.rest
+                name: el.name,
+                method: el.method,
+                scope: el.scope,
               };
             });
           }
           if (res.contextList.get()) {
-            data.contextList = res.contextList.get().map(el => {
+            data.contextList = res.contextList.get().map((el) => {
               return {
                 id: el.id,
-                name: el.name
+                name: el.name,
               };
             });
           }
@@ -545,11 +481,11 @@ export default {
       const file = ev.target.files[0];
       const reader = new FileReader();
       if (file.name.includes(".json")) {
-        reader.onload = res => {
+        reader.onload = (res) => {
           this.fileSwagger = res.target.result;
           this.parseSwaggerJson(JSON.parse(this.fileSwagger));
         };
-        reader.onerror = err => console.log(err);
+        reader.onerror = (err) => console.log(err);
         reader.readAsText(file);
       }
     },
@@ -558,28 +494,65 @@ export default {
       console.log(swagger.paths);
       const paths = swagger.paths;
       let tags = [];
+      let datas = [];
       for (var key in paths) {
+        let item = {
+          name: key,
+          method: null,
+          tag: null,
+          scope: null,
+        };
         if (paths[key].get) {
-          tags.push(paths[key].get.tags[0]);
+          item.method = "GET";
+          item.tag = paths[key].get.tags[0];
+          if (paths[key].get.security) {
+            item.scope = paths[key].get.security[0].OauthSecurity[0];
+          }
         } else if (paths[key].post) {
-          tags.push(paths[key].post.tags[0]);
+          item.method = "POST";
+          item.tag = paths[key].post.tags[0];
+          if (paths[key].post.security) {
+            item.scope = paths[key].post.security[0].OauthSecurity[0];
+          }
         } else if (paths[key].put) {
-          tags.push(paths[key].put.tags[0]);
+          item.method = "PUT";
+          item.tag = paths[key].put.tags[0];
+          if (paths[key].put.security) {
+            item.scope = paths[key].put.security[0].OauthSecurity[0];
+          }
         } else if (paths[key].delete) {
-          tags.push(paths[key].delete.tags[0]);
+          item.method = "DELETE";
+          item.tag = paths[key].delete.tags[0];
+          if (paths[key].delete.security) {
+            item.scope = paths[key].delete.security[0].OauthSecurity[0];
+          }
         }
+
+        datas.push(item);
       }
-      const p = new Set();
-      tags.forEach(element => {
-        p.add(element);
-      });
-      this.tagsList = Array.from(p);
+      const groups = datas.reduce((groups, item) => {
+        const group = groups[item.tag] || [];
+        group.push(item);
+        groups[item.tag] = group;
+        return groups;
+      }, {});
+
+      console.log(groups);
+      let data;
+      for (var key in groups) {
+        data = {
+          name: key,
+          children: groups[key],
+        };
+        this.tagsList.push(data);
+      }
+      console.log(this.tagsList);
     },
     async saveProfile() {
       console.log(this.profileData);
       const graphContext = new SpinalGraph("GraphContext");
       if (this.profileData.contextList.length > 0) {
-        this.profileData.contextList.forEach(async element => {
+        this.profileData.contextList.forEach(async (element) => {
           const contxNode = await this.digitalGraph.getContext(element.name);
           graphContext.addContext(contxNode);
         });
@@ -613,17 +586,17 @@ export default {
     },
     createBase64Image(fileObject) {
       const reader = new FileReader();
-      reader.addEventListener("load", event => {
+      reader.addEventListener("load", (event) => {
         this.user.picture_base64 = reader.result.toString();
       });
       reader.readAsDataURL(fileObject);
-    }
+    },
   },
   mounted() {
     // Fuse search initialization.
     this.fuseSearch = new Fuse(this.profiles, {
       keys: ["name", "sigle"],
-      threshold: 0.3
+      threshold: 0.3,
     });
   },
   watch: {
@@ -638,8 +611,8 @@ export default {
         result = this.fuseSearch.search(this.searchQuery);
       }
       this.searchedData = result;
-    }
-  }
+    },
+  },
 };
 </script>
 <style lang="css" scoped>
