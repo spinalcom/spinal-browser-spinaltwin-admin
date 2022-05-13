@@ -64,7 +64,7 @@
               >
                 <label v-for="(app, index) in item.appList">
                   <template v-if="index > 0">,</template>
-                  {{ app.data.name }}
+                  {{ app.name }}
                 </label>
               </md-table-cell>
 
@@ -74,7 +74,7 @@
               >
                 <label v-for="(cont, index) in item.buildContextList">
                   <template v-if="index > 0">,</template>
-                  {{ cont.data.name }}
+                  {{ cont.name }}
                 </label>
               </md-table-cell>
               <md-table-cell md-label="Actions">
@@ -103,7 +103,9 @@
             <form @submit.prevent="validate">
               <div>
                 <div class="md-layout">
-                  <div class="md-layout-item md-size-45 mt-4 md-small-size-100">
+                  <div
+                    class="md-layout-item md-size-100 mt-4 md-small-size-100"
+                  >
                     <ValidationProvider name="name" v-slot="{ passed, failed }">
                       <md-field
                         :class="[
@@ -127,210 +129,74 @@
                       </md-field>
                     </ValidationProvider>
                     <br />
-                    <div>
-                      <h5 class="title">Liste d'application autorisées</h5>
-                      <div class="md-layout" v-if="profileData.appList">
-                        <div
-                          v-for="ap in profileData.appList"
-                          class="
-                            md-layout-item md-size-50
-                            mt-4
-                            md-small-size-100
-                          "
+                    <ValidationProvider name="name">
+                      <label>Contextes généraux</label>
+                      <div :key="item" v-for="item in contexteRequired">
+                        <md-checkbox v-model="addScene" :value="item">
+                          {{ item.info.name.get() }}</md-checkbox
                         >
-                          <md-card>
-                            <md-card-content>
-                              <label class="text-center">
-                                {{ ap.data.name }}
-                              </label>
-                              <hr />
-                              <label
-                                class="text-primary text-center"
-                                v-for="(el, index) in ap.role"
-                              >
-                                <template v-if="index > 0">,</template>
-                                {{ el.name }}
-                              </label>
-                              <hr />
-                              <div>
-                                <md-icon
-                                  class="text-center text-primary"
-                                  @click.native="editConfig('app', ap)"
-                                  >edit</md-icon
-                                >
-                                <md-icon
-                                  class="text-center text-danger"
-                                  @click.native="deleteConfig('app', ap)"
-                                  >close</md-icon
-                                >
-                              </div>
-                            </md-card-content>
-                          </md-card>
-                        </div>
                       </div>
-                      <br />
-                      <div v-if="profileData.appList.length < 1">
-                        <h6 class="text-center text-gray">
-                          Aucune application configurée
-                        </h6>
-                      </div>
-                    </div>
+                    </ValidationProvider>
                     <br />
-                    <div>
-                      <h5 class="title">Liste de contexte autorisées</h5>
-                      <div
-                        class="md-layout"
-                        v-if="profileData.buildContextList"
-                      >
-                        <div
-                          v-for="contx in profileData.buildContextList"
-                          class="
-                            md-layout-item md-size-50
-                            mt-4
-                            md-small-size-100
-                          "
-                        >
-                          <md-card>
-                            <md-card-content>
-                              <label> {{ contx.data.name }} </label>
-                              <hr />
-                              <label
-                                class="text-primary text-center"
-                                v-for="(el, index) in contx.role"
-                              >
-                                <template v-if="index > 0">,</template>
-                                {{ el.name }}
-                              </label>
-                              <hr />
-                              <div>
-                                <md-icon
-                                  class="text-center text-primary"
-                                  @click.native="editConfig('contexte', contx)"
-                                  >edit</md-icon
-                                >
-                                <md-icon
-                                  class="text-center text-danger"
-                                  @click.native="
-                                    deleteConfig('contexte', contx)
-                                  "
-                                  >close</md-icon
-                                >
-                              </div>
-                            </md-card-content>
-                          </md-card>
-                        </div>
-                      </div>
-                      <br />
-                      <div v-if="profileData.buildContextList.length < 1">
-                        <h6 class="text-center text-gray">
-                          Aucun contexte configurée
-                        </h6>
-                      </div>
-                    </div>
                   </div>
-                  <div class="md-layout-item md-size-55 mt-4 md-small-size-100">
-                    <md-button
-                      @click="openConfig('app')"
-                      class="btn-next md-primary"
-                    >
-                      Configuration applications
-                    </md-button>
-                    <md-button
-                      @click="openConfig('contexte')"
-                      class="btn-next md-primary"
-                    >
-                      Configuration contextes
-                    </md-button>
-                    <br />
-                    <br />
-                    <ValidationProvider v-if="config === 'app'" name="appList">
-                      <multiselect
-                        v-model="configData.data"
-                        :options="options"
-                        group-values="apps"
-                        group-label="nameGroup"
-                        :group-select="true"
-                        placeholder="Sélectionner les applications autorisés"
-                        track-by="name"
-                        label="name"
-                      >
-                        <span slot="noResult"
-                          >Oops! No elements found. Consider changing the search
-                          query.</span
-                        >
-                      </multiselect>
-                    </ValidationProvider>
-                    <ValidationProvider
-                      v-if="config === 'contexte'"
-                      name="buildContextList"
-                    >
-                      <multiselect
-                        v-model="configData.data"
-                        tag-placeholder="Add this as new tag"
-                        placeholder="Sélectionner les contextes autorisés"
-                        label="name"
-                        track-by="id"
-                        :options="digitalContextListComputed"
-                        :taggable="true"
-                      >
-                        <span slot="noResult"
-                          >Oops! No elements found. Consider changing the search
-                          query.</span
-                        >
-                      </multiselect>
-                    </ValidationProvider>
-                    <br />
-                    <ValidationProvider v-if="config" name="roleList">
-                      <multiselect
-                        v-model="configData.role"
-                        tag-placeholder="Add this as new tag"
-                        placeholder="Selectionner les accès autorisés"
-                        label="name"
-                        track-by="id"
-                        :options="roleList"
-                        :multiple="true"
-                        :taggable="true"
-                      >
-                        <span slot="noResult"
-                          >Oops! No elements found. Consider changing the search
-                          query.</span
-                        >
-                      </multiselect>
-                    </ValidationProvider>
-                    <br />
-                    <md-button
-                      @click="saveConfig('app')"
-                      v-if="config === 'app'"
-                      class="btn-next md-primary"
-                    >
-                      Valider
-                    </md-button>
-                    <md-button
-                      @click="saveConfig('contexte')"
-                      v-if="config === 'contexte'"
-                      class="btn-next md-primary"
-                    >
-                      Valider
-                    </md-button>
+                  <div class="md-layout-item md-size-50 mt-4 md-small-size-50">
+                    <vue-good-table
+                      :columns="columns"
+                      :rows="appList"
+                      :select-options="{ enabled: true }"
+                      :search-options="{ enabled: true }"
+                      :group-options="{
+                        enabled: true,
+                        collapsable: true,
+                      }"
+                      @on-selected-rows-change="selectApp"
+                    />
                   </div>
-                </div>
-              </div>
-              <hr />
-              <md-card-actions>
-                <div>
-                  <md-button @click="cancelAdd" class="btn-next md-danger">
-                    Annuler
-                  </md-button>
-                  <md-button @click="saveProfile" class="btn-next md-primary">
-                    Enregistrer
-                  </md-button>
-                </div>
-              </md-card-actions>
-            </form>
-          </ValidationObserver>
-          <div class="md-layout" v-if="display === true && sState === 'detail'">
-            <div class="md-layout-item md-size-50 mt-4 md-small-size-100">
-              <h4 class="text-center text-primary" style="font-weight: bold">
+                  <div class="md-layout-item md-size-50 mt-4 md-small-size-50">
+                    <div :key="item" v-for="item in digitalContextListComputed">
+                      <md-checkbox
+                        v-model="profileData.buildContextList"
+                        :value="item"
+                      >
+                        {{ item.name }}</md-checkbox
+                      >
+                    </div>
+                    <!--<table
+                      class="table table-striped table-hover"
+                      v-if="digitalContextListComputed.length > 0"
+                    >
+                      <thead>
+                        <tr>
+                          <th>
+                            <label class="form-checkbox">
+                              <input
+                                type="checkbox"
+                                v-model="selectAll"
+                                @click="select"
+                              />
+                              <i class="form-icon"></i>
+                            </label>
+                          </th>
+                          <th style="font-size: 16px">Liste des contextes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="i in digitalContextListComputed">
+                          <td>
+                            <label class="form-checkbox">
+                              <input
+                                type="checkbox"
+                                :value="i"
+                                v-model="profileData.contextList"
+                              />
+                              <i class="form-icon"></i>
+                            </label>
+                          </td>
+                          <td>{{ i.name }}</td>
+                        </tr>
+                      </tbody>
+                    </table>-->
+                    <!--<h4 class="text-center text-primary" style="font-weight: bold">
                 Liste d'applications autorisées
               </h4>
               <br />
@@ -352,9 +218,25 @@
                     </label>
                   </md-table-cell>
                 </md-table-row>
-              </md-table>
-            </div>
-            <div class="md-layout-item md-size-50 mt-4 md-small-size-100">
+              </md-table>-->
+                  </div>
+                </div>
+              </div>
+              <hr />
+              <md-card-actions>
+                <div>
+                  <md-button @click="cancelAdd" class="btn-next md-danger">
+                    Annuler
+                  </md-button>
+                  <md-button @click="saveProfile" class="btn-next md-primary">
+                    Enregistrer
+                  </md-button>
+                </div>
+              </md-card-actions>
+            </form>
+          </ValidationObserver>
+          <div class="md-layout" v-if="display === true">
+            <!--<div class="md-layout-item md-size-50 mt-4 md-small-size-100">
               <h4 class="text-center text-primary" style="font-weight: bold">
                 Liste de contextes autorisées
               </h4>
@@ -378,7 +260,7 @@
                   </md-table-cell>
                 </md-table-row>
               </md-table>
-            </div>
+            </div>-->
           </div>
         </md-card-content>
         <md-card-actions md-alignment="space-between" v-if="display === false">
@@ -418,9 +300,21 @@ import {
   SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST,
 } from "../../../constant";
 // import Places from 'vue-places'
+import "vue-good-table/dist/vue-good-table.css";
+import { VueGoodTable } from "vue-good-table";
 export default {
   name: "Profiles",
-  components: { Pagination, SlideYDownTransition, Multiselect },
+  components: { Pagination, SlideYDownTransition, Multiselect, VueGoodTable },
+  props: {
+    checked: {
+      type: Boolean,
+      default: false,
+    },
+    name: String,
+    title: String,
+    icon: String,
+    disabled: Boolean,
+  },
   data() {
     return {
       config: "",
@@ -448,7 +342,9 @@ export default {
           value.size < 2000000 ||
           "Avatar size should be less than 2 MB!",
       ],
-      select: null,
+      selectAll: false,
+      selectAllApps: false,
+      selectedApps: [],
       profileData: {
         id: null,
         name: "",
@@ -464,8 +360,22 @@ export default {
         data: null,
         role: null,
       },
+      list: [],
+      contexteRequired: [],
+      addScene: null,
       digitalGraph: SpinalGraph,
+      digitalContextListComputed: [],
       sState: "",
+      columns: [
+        {
+          label: "Applications",
+          field: "name",
+        },
+        /*{
+          label: "Type",
+          field: "",
+        },*/
+      ],
     };
   },
   computed: {
@@ -494,18 +404,22 @@ export default {
         ? this.searchedData.length
         : this.profiles.length;
     },
-    digitalContextListComputed() {
+    /*digitalContextListComputed() {
       return this.digitalContextList.map((res) => {
         return {
           id: res.info.id?.get(),
           name: res.info.name?.get() ?? "no name",
         };
       });
-    },
+    },*/
+  },
+  mounted: function () {
+    if (this.auto == "true" || this.auto == 1) {
+      this.generate();
+    }
   },
   created: async function () {
     const url = localStorage.getItem("digitalGraphURL");
-    let list = [];
     let i = 0;
     if (SpinalGraphService.getGraph() === undefined) {
       const graph = await spinalIO.load(
@@ -514,20 +428,13 @@ export default {
       await SpinalGraphService.setGraph(graph);
     }
     if (url) {
-      console.log(url);
       this.digitalGraph = await spinalIO.load(url);
-      console.log(await this.digitalGraph.getChildren());
-      list = await this.digitalGraph.getChildren();
-      for (i; i < list.length; i++) {
-        this.digitalContextList.push(list[i]);
-      }
+      this.list = await this.digitalGraph.getChildren();
       this.profileContext = SpinalGraphService.getContext(
         USER_PROFILE_LIST_CONTEXT
       );
-      console.log(this.profileContext);
 
       await this.getApp();
-      await this.getRoles();
       await this.getUserProfile();
     }
   },
@@ -541,6 +448,82 @@ export default {
         return b[sortBy].localeCompare(a[sortBy]);
       });
     },
+    selectApp(params) {
+      console.log(params);
+      this.selectedApps = [];
+      this.profileData.appList = [];
+      if (!this.selectAllApps) {
+        for (let i in params.selectedRows) {
+          this.loadContext(params.selectedRows[i]);
+          let res = {
+            id: params.selectedRows[i].id,
+            name: params.selectedRows[i].name,
+            typeContext: params.selectedRows[i].type,
+            originalIndex: params.selectedRows[i].originalIndex,
+            vgtSelected: params.selectedRows[i].vgtSelected,
+            vgt_id: params.selectedRows[i].vgt_id,
+          };
+          this.selectedApps.push(res);
+        }
+        this.profileData.appList = this.selectedApps;
+
+        console.log(this.digitalContextListComputed);
+      }
+    },
+    loadContext(app) {
+      //,app
+      this.digitalContextListComputed = [];
+      let digitalContextList = [];
+      let lists = this.list;
+      lists.forEach((item) => {
+        console.log(item);
+        app.typeContext.forEach((element) => {
+          if (item.info.type.get() === element) {
+            if (digitalContextList.length === 0) {
+              digitalContextList.push(item);
+            } else {
+              console.log("here");
+              digitalContextList.filter(function (elem) {
+                console.log(elem);
+                console.log(
+                  "comparaison",
+                  elem.info.name.get(),
+                  item.info.name.get()
+                );
+                if (elem.info.name.get() != item.info.name.get()) {
+                  digitalContextList.push(item);
+                }
+              });
+            }
+          }
+        });
+      });
+
+      console.log(digitalContextList);
+      this.digitalContextListComputed = digitalContextList.map((res) => {
+        return {
+          id: res.info.id?.get(),
+          name: res.info.name?.get() ?? "no name",
+        };
+      });
+      console.log(this.digitalContextListComputed);
+    },
+    select() {
+      this.selected = [];
+      this.profiles.buildContextList = [];
+      console.log(this.selected);
+      if (!this.selectAll) {
+        let contx;
+        for (let i in this.digitalContextListComputed) {
+          contx = {
+            id: this.digitalContextListComputed[i].id,
+            data: this.digitalContextListComputed[i].name,
+          };
+          this.selected.push(contx);
+        }
+        this.profiles.buildContextList = contx;
+      }
+    },
     openConfig(section) {
       this.configData = {
         data: null,
@@ -548,22 +531,28 @@ export default {
       };
       this.config = section;
     },
-    displayAdd(menu = "", item = null) {
+    async displayAdd(menu = "", item = null) {
       this.display = true;
       this.sState = menu;
       if (this.sState == "edit" && item != null) {
         console.log(item);
         this.profileData = item;
+        await this.getApp();
       }
       if (this.sState == "detail" && item != null) {
         this.profileData = item;
       }
       if (this.sState == "add") {
+        this.contexteRequired = this.list.filter((elt) => {
+          if (elt.info.type.get() === "SpinalService") {
+            return elt;
+          }
+        });
+        console.log(this.contexteRequired);
         this.profileData = {
           name: null,
           appList: [],
           buildContextList: [],
-          roleList: [],
         };
       }
     },
@@ -632,6 +621,7 @@ export default {
         this.profileContext.info.id.get(),
         this.profileContext.info.id.get()
       );
+      console.log(prof);
       if (prof.length > 0) {
         prof.map((res) => {
           let data = {
@@ -645,16 +635,19 @@ export default {
           if (res.appList.get()) {
             data.appList = res.appList.get().map((el) => {
               return {
-                data: el.data,
-                role: el.role,
+                id: el.id,
+                name: el.name,
+                originalIndex: el.originalIndex,
+                vgtSelected: el.vgtSelected,
+                vgt_id: el.vgt_id,
               };
             });
           }
           if (res.buildContextList.get()) {
             data.buildContextList = res.buildContextList.get().map((el) => {
               return {
-                data: el.data,
-                role: el.role,
+                id: el.id,
+                name: el.name,
               };
             });
           }
@@ -663,35 +656,64 @@ export default {
       }
       console.log(this.profiles);
     },
-    async getRoles() {
-      const roleContext = SpinalGraphService.getContext(ROLE_LIST_CONTEXT);
-      const rules = await SpinalGraphService.getChildrenInContext(
-        roleContext.info.id.get(),
-        roleContext.info.id.get()
-      );
-      if (rules.length > 0) {
-        rules.map((res) => {
-          let data = {
-            id: null,
-            name: null,
-          };
-          data.id = res.id.get();
-          data.name = res.name.get();
-          this.roleList.push(data);
-        });
-      }
-      console.log(this.roleList);
-    },
     async getApp() {
+      this.appList = [];
       const appContext = SpinalGraphService.getContext(
         SPINALTWIN_DESCRIPTION_CONTEXT
       );
-      this.appList = await SpinalGraphService.getChildrenInContext(
+      let apps = await SpinalGraphService.getChildrenInContext(
         appContext.info.id.get(),
         appContext.info.id.get()
       );
-      this.options = await this.computedApplList(this.appList);
-      console.log(this.options);
+      if (apps.length > 0) {
+        apps.map((res) => {
+          let data = {
+            name: null,
+            children: [],
+          };
+          data.name = res.name.get();
+          res.childrenIds.map(async (elt) => {
+            const node = await SpinalGraphService.getNodeAsync(elt);
+            console.log(node);
+            let rep;
+            if (this.sState == "edit") {
+              this.profileData.appList.map((el) => {
+                if (el.name === node.name.get()) {
+                  console.log("count 1", el);
+                  rep = {
+                    id: node.id.get(),
+                    name: node.name.get(),
+                    typeContext: node.typeContext.get(),
+                    originalIndex: el.originalIndex,
+                    vgtSelected: el.vgtSelected,
+                    vgt_id: el.vgt_id,
+                  };
+                } else if (el.name != node.name.get() && !el.originalIndex) {
+                  console.log("comparaison", el.name, node.name.get());
+                  rep = {
+                    id: node.id.get(),
+                    name: node.name.get(),
+                    typeContext: node.typeContext.get(),
+                  };
+                }
+              });
+            } else {
+              if (node.typeContext.get())
+                rep = {
+                  id: node.id.get(),
+                  name: node.name.get(),
+                  typeContext: node.typeContext.get(),
+                };
+            }
+            if (rep != undefined) {
+              data.children.push(rep);
+            }
+          });
+          this.appList.push(data);
+        });
+      }
+
+      console.log(this.appList);
     },
     computedApplList(data) {
       return Promise.all(
@@ -713,15 +735,24 @@ export default {
     },
     async saveProfile() {
       this.profiles = [];
+      console.log(this.addScene);
+      let scene = {
+        id: this.addScene.info.id?.get(),
+        name: this.addScene.info.name?.get() ?? "no name",
+      };
+      this.profileData.buildContextList.push(scene);
       console.log(this.profileData);
       const graphContext = new SpinalGraph("GraphContext");
       if (this.profileData.buildContextList.length > 0) {
         this.profileData.buildContextList.forEach(async (element) => {
-          const contxNode = await this.digitalGraph.getContext(
-            element.data.name
-          );
+          console.log(element);
+          const contxNode = await this.digitalGraph.getContext(element.name);
+          console.log("node", contxNode);
           graphContext.addContext(contxNode);
         });
+      }
+      if (this.profileData.appList.length > 0) {
+        graphContext.info.add_attr("appsList", this.profileData.appList);
       }
       if (this.profileData.id) {
         const res = SpinalTwinServiceUserProfile.updateUserProfile(

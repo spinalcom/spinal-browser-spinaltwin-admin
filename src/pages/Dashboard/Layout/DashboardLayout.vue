@@ -37,7 +37,27 @@
           }"
         ></sidebar-item>
         <sidebar-item
-          :link="{ name: 'Rôles', icon: 'lock', path: '/roles' }"
+          :link="{
+            name: 'Synchronisation Admin',
+            icon: 'autorenew',
+            path: '/registerAppServer',
+          }"
+        ></sidebar-item>
+        <!--<sidebar-item
+          :link="{
+            name: 'Informations identification',
+            icon: 'contacts',
+            path: '/credentials',
+          }"
+        ></sidebar-item>-->
+        <sidebar-item
+          :link="{ name: 'Organ List', icon: 'webhook', path: '/organ-list' }"
+        ></sidebar-item>
+        <sidebar-item
+          :link="{ name: 'Application List', icon: 'apps', path: '/app-list' }"
+        ></sidebar-item>
+        <sidebar-item
+          :link="{ name: 'API List', icon: 'api', path: '/api-list' }"
         ></sidebar-item>
       </template>
     </side-bar>
@@ -105,7 +125,7 @@ export default {
     ContentFooter,
     MobileMenu,
     ZoomCenterTransition,
-    SidebarItem
+    SidebarItem,
   },
   data() {
     return {
@@ -114,10 +134,10 @@ export default {
       sidebarBackground: "green",
       sidebarBackgroundImage: "./img/sidebar-2.jpg",
       sidebarMini: true,
-      sidebarImg: true
+      sidebarImg: true,
     };
   },
-  created: function() {},
+  created: function () {},
   methods: {
     toggleSidebar() {
       if (this.$sidebar.showSidebar) {
@@ -132,7 +152,7 @@ export default {
     back() {
       const token = sessionStorage.getItem("tokenKey");
       console.log(token);
-    }
+    },
   },
   updated() {
     reinitScrollbar();
@@ -143,8 +163,8 @@ export default {
   watch: {
     sidebarMini() {
       this.minimizeSidebar();
-    }
-  }
+    },
+  },
 };
 </script>
 <style lang="scss">

@@ -6,7 +6,11 @@ import Dashboard from "../pages/Dashboard/Dashboard.vue";
 import Profiles from "../pages/Dashboard/Pages/Profiles.vue";
 import AppProfile from "../pages/Dashboard/Pages/AppProfile.vue";
 import Users from "../pages/Dashboard/Pages/Users.vue";
-import Roles from "../pages/Dashboard/Pages/Roles.vue";
+import AppList from "../pages/Dashboard/Pages/AppList.vue";
+import ApiList from "../pages/Dashboard/Pages/ApiList.vue";
+import OrganList from "../pages/Dashboard/Pages/OrganList.vue";
+import Credentials from "../pages/Dashboard/Pages/Credentials.vue";
+import RegisterAdmin from "../pages/Dashboard/Pages/RegisterAdmin.vue";
 
 const routes = [
   {
@@ -34,9 +38,29 @@ const routes = [
         components: { default: AppProfile }
       },
       {
-        path: "roles",
-        name: "Rôles",
-        components: { default: Roles }
+        path: "app-list",
+        name: "AppList",
+        components: { default: AppList }
+      },
+      {
+        path: "api-list",
+        name: "ApiList",
+        components: { default: ApiList }
+      },
+      {
+        path: "organ-list",
+        name: "OrganList",
+        components: { default: OrganList }
+      },
+      {
+        path: "credentials",
+        name: "Credentials",
+        components: { default: Credentials }
+      },
+      {
+        path: "registerAppServer",
+        name: "RegisterAdmin",
+        components: { default: RegisterAdmin }
       },
       {
         path: "users",

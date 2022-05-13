@@ -6,9 +6,7 @@
           <div class="card-icon">
             <md-icon>group</md-icon>
           </div>
-          <h4 class="title" v-if="display === false">
-            Liste des niveaux d'accès
-          </h4>
+          <h4 class="title">Liste des applications</h4>
           <!--<h4 class="title" v-if="display === true">
             Ajouter un niveau d'accès
           </h4>
@@ -16,33 +14,21 @@
             >Ajouter</md-button>-->
         </md-card-header>
         <md-card-content>
-          <md-table
-            v-if="display === false"
-            :value="queriedData"
-            class="paginated-table table-striped table-hover"
+          <div
+            class="md-layout-item md-size-90 mt-4 md-small-size-100"
+            v-if="appList"
           >
-            <md-table-toolbar>
-              <md-field>
-                <label for="pages">Par page</label>
-                <md-select v-model="pagination.perPage" name="pages">
-                  <md-option
-                    v-for="item in pagination.perPageOptions"
-                    :key="item"
-                    :label="item"
-                    :value="item"
-                  >
-                    {{ item }}
-                  </md-option>
-                </md-select>
-              </md-field>
-            </md-table-toolbar>
-            <hr />
-            <md-table-row slot="md-table-row" slot-scope="{ item }">
-              <md-table-cell md-label="Intitulé">{{ item.name }}</md-table-cell>
-              <md-table-cell> </md-table-cell>
-            </md-table-row>
-          </md-table>
-          <ValidationObserver ref="form" v-if="display === true">
+            <vue-good-table
+              :columns="columns"
+              :rows="appList"
+              :search-options="{ enabled: true }"
+              :group-options="{
+                enabled: true,
+                collapsable: true,
+              }"
+            />
+          </div>
+          <!--<ValidationObserver ref="form" v-if="display === true">
             <form @submit.prevent="validate">
               <div>
                 <div class="md-layout">
@@ -68,23 +54,8 @@
                 </div>
               </md-card-actions>
             </form>
-          </ValidationObserver>
+          </ValidationObserver> -->
         </md-card-content>
-        <md-card-actions md-alignment="space-between" v-if="display === false">
-          <div class="">
-            <p class="card-category">
-              Showing {{ from + 1 }} to {{ to }} of {{ total }}
-              entries
-            </p>
-          </div>
-          <pagination
-            class="pagination-no-border pagination-primary"
-            v-model="pagination.currentPage"
-            :per-page="pagination.perPage"
-            :total="total"
-          >
-          </pagination>
-        </md-card-actions>
       </md-card>
     </div>
   </div>
@@ -95,15 +66,18 @@ import Fuse from "fuse.js";
 import { SpinalGraphService } from "spinal-env-viewer-graph-service";
 import { SpinalTwinServiceRole } from "spinal-service-spinaltwin-admin";
 import { spinalIO } from "../../../services/spinalIO";
+import "vue-good-table/dist/vue-good-table.css";
+import { VueGoodTable } from "vue-good-table";
 import {
   ROLE_LIST_CONTEXT,
-  SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST
+  SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST,
+  SPINALTWIN_DESCRIPTION_CONTEXT,
 } from "../../../constant";
 // import { SlideYDownTransition } from "vue2-transitions";
 // import Places from 'vue-places'
 export default {
-  name: "Roles",
-  components: { Pagination },
+  name: "AppList",
+  components: { Pagination, VueGoodTable },
   data() {
     return {
       display: false,
@@ -116,24 +90,34 @@ export default {
         perPage: 5,
         currentPage: 1,
         perPageOptions: [5, 10, 25, 50],
-        total: 0
+        total: 0,
       },
       searchQuery: "",
       propsToSearch: ["name", "sigle"],
       searchedData: [],
       fuseSearch: null,
       rules: [
-        value =>
+        (value) =>
           !value ||
           value.size < 2000000 ||
-          "Avatar size should be less than 2 MB!"
+          "Avatar size should be less than 2 MB!",
       ],
       select: null,
-      roles: [],
-      role: {
-        name: ""
+      appList: [],
+      app: {
+        name: "",
       },
-      roleContext: null
+      appContext: null,
+      columns: [
+        {
+          label: "Applications",
+          field: "name",
+        },
+        {
+          label: "Context Type",
+          field: "",
+        },
+      ],
     };
   },
   computed: {
@@ -160,10 +144,10 @@ export default {
     total() {
       return this.searchedData.length > 0
         ? this.searchedData.length
-        : this.roles.length;
-    }
+        : this.appList.length;
+    },
   },
-  created: async function() {
+  created: async function () {
     const url = localStorage.getItem("digitalGraphURL");
     if (SpinalGraphService.getGraph() === undefined) {
       const graph = await spinalIO.load(
@@ -173,7 +157,7 @@ export default {
     }
     if (url) {
       console.log(url);
-      await this.getRoles();
+      await this.getApps();
     }
   },
   methods: {
@@ -193,30 +177,38 @@ export default {
       }
       if (menu == "add") {
         this.role = {
-          name: null
+          name: null,
         };
       }
     },
-    async getRoles() {
-      this.roleContext = SpinalGraphService.getContext(ROLE_LIST_CONTEXT);
-      const rules = await SpinalGraphService.getChildrenInContext(
-        this.roleContext.info.id.get(),
-        this.roleContext.info.id.get()
+    async getApps() {
+      this.appContext = SpinalGraphService.getContext(
+        SPINALTWIN_DESCRIPTION_CONTEXT
       );
-      if (rules.length > 0) {
-        rules.map(res => {
+      const app = await SpinalGraphService.getChildrenInContext(
+        this.appContext.info.id.get(),
+        this.appContext.info.id.get()
+      );
+      if (app.length > 0) {
+        app.map((res) => {
           let data = {
-            id: null,
-            name: null
+            name: null,
+            children: [],
           };
-          data.id = res.id.get();
           data.name = res.name.get();
-          this.roles.push(data);
+          res.childrenIds.map(async (elt) => {
+            const node = await SpinalGraphService.getNodeAsync(elt);
+            let rep = {
+              id: node.id.get(),
+              name: node.name.get(),
+            };
+            data.children.push(rep);
+          });
+          this.appList.push(data);
         });
       }
-      console.log(this.roles);
     },
-    async saveRole() {
+    /*async saveRole() {
       console.log(this.role.id.get());
       if (this.role.id.get()) {
         console.log(this.role.name);
@@ -236,13 +228,13 @@ export default {
     cancelAdd() {
       this.display = false;
       this.$refs.form.reset();
-    }
+    },*/
   },
   mounted() {
     // Fuse search initialization.
     this.fuseSearch = new Fuse(this.roles, {
       keys: ["name", "sigle"],
-      threshold: 0.3
+      threshold: 0.3,
     });
   },
   watch: {
@@ -257,8 +249,8 @@ export default {
         result = this.fuseSearch.search(this.searchQuery);
       }
       this.searchedData = result;
-    }
-  }
+    },
+  },
 };
 </script>
 <style lang="css" scoped>

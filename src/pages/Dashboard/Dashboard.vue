@@ -108,7 +108,7 @@ import Multiselect from "vue-multiselect";
 import {
   DATA_LIST_CONTEXT,
   ADD_DIGITALTWIN,
-  SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST
+  SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST,
 } from "../../constant";
 import { spinalIO } from "../../services/spinalIO";
 import { SpinalGraphService } from "spinal-env-viewer-graph-service";
@@ -129,13 +129,13 @@ export default {
       digitalList: [],
       digitalTwinData: {
         name: "",
-        url: ""
+        url: "",
       },
       urlSpinalTwinAdmin: null,
-      dataListContext: null
+      dataListContext: null,
     };
   },
-  beforeCreate: function() {
+  beforeCreate: function () {
     if (this.$route.query.path) {
       const url = atob(this.$route.query.path);
       localStorage.setItem("urlSpinalTwinGraph", url);
@@ -143,7 +143,7 @@ export default {
       console.log(this.urlSpinalTwinAdmin);
     }
   },
-  created: async function() {
+  created: async function () {
     const graph = await spinalIO.load(
       localStorage.getItem("urlSpinalTwinGraph")
     );
@@ -166,11 +166,13 @@ export default {
         const result = SpinalGraphService.getChildren(
           this.dataListContext.info.id.get()
         )
-          .then(async res => {
+          .then(async (res) => {
             this.digitalList = res;
-            console.log(this.digitalList);
+            if (this.digitalList.length < 1) {
+              localStorage.removeItem("nameDigitalTwinCurrent");
+            }
           })
-          .catch(e => {
+          .catch((e) => {
             console.error(e);
             return Promise.reject(Error("Internal Server Error"));
           });
@@ -206,18 +208,18 @@ export default {
           ADD_DIGITALTWIN,
           SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST
         )
-          .then(async res => {
+          .then(async (res) => {
             this.getDigitalTwin();
             this.display = false;
             return res;
           })
-          .catch(e => {
+          .catch((e) => {
             console.error(e);
             return Promise.reject(Error("Internal Server Error"));
           });
         return result;
       }
-    }
-  }
+    },
+  },
 };
 </script>

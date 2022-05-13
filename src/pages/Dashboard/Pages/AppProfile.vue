@@ -4,7 +4,7 @@
       <md-card>
         <md-card-header class="md-card-header-icon md-card-header-primary">
           <div class="card-icon">
-            <md-icon v-if="sState != 'detail'">group</md-icon>
+            <md-icon v-if="sState != 'detail'">apps</md-icon>
             <md-icon
               @click.native="cancelAdd"
               v-if="display === true && sState === 'detail'"
@@ -125,7 +125,7 @@
                         </slide-y-down-transition>
                       </md-field>
                     </ValidationProvider>
-                    <ValidationProvider
+                    <!--<ValidationProvider
                       name="fileSwagger"
                       v-slot="{ passed, failed }"
                     >
@@ -147,7 +147,7 @@
                           >
                         </slide-y-down-transition>
                       </md-field>
-                    </ValidationProvider>
+                    </ValidationProvider>-->
                     <br />
                   </div>
                   <div
@@ -189,7 +189,7 @@
                             <label class="form-checkbox">
                               <input
                                 type="checkbox"
-                                :value="i.id"
+                                :value="i"
                                 v-model="profileData.contextList"
                               />
                               <i class="form-icon"></i>
@@ -216,21 +216,6 @@
             </form>
           </ValidationObserver>
         </md-card-content>
-        <md-card-actions md-alignment="space-between" v-if="display === false">
-          <div class="">
-            <p class="card-category">
-              Showing {{ from + 1 }} to {{ to }} of {{ total }}
-              entries
-            </p>
-          </div>
-          <pagination
-            class="pagination-no-border pagination-primary"
-            v-model="pagination.currentPage"
-            :per-page="pagination.perPage"
-            :total="total"
-          >
-          </pagination>
-        </md-card-actions>
       </md-card>
     </div>
   </div>
@@ -246,7 +231,7 @@ import {
   SpinalGraphService,
 } from "spinal-env-viewer-graph-service";
 import { SpinalTwinServiceAppProfile } from "spinal-service-spinaltwin-admin";
-import { APP_PROFILE_LIST_CONTEXT } from "../../../constant";
+import { APP_PROFILE_LIST_CONTEXT, API_LIST_CONTEXT } from "../../../constant";
 import "vue-good-table/dist/vue-good-table.css";
 import { VueGoodTable } from "vue-good-table";
 export default {
@@ -381,6 +366,7 @@ export default {
       console.log(this.profileContext);
 
       await this.getAppProfile();
+      await this.getApis();
     }
   },
   methods: {
@@ -403,6 +389,7 @@ export default {
             name: params.selectedRows[i].name,
             method: params.selectedRows[i].method,
             scope: params.selectedRows[i].scope,
+            id: params.selectedRows[i].id,
           };
           this.selectedRoutes.push(res);
         }
@@ -414,10 +401,15 @@ export default {
       this.profileData.contextList = [];
       console.log(this.selected);
       if (!this.selectAll) {
+        let contx;
         for (let i in this.digitalContextListComputed) {
-          this.selected.push(this.digitalContextListComputed[i].id);
+          contx = {
+            id: this.digitalContextListComputed[i].id,
+            data: this.digitalContextListComputed[i].name,
+          };
+          this.selected.push(contx);
         }
-        this.profileData.contextList = this.selected;
+        this.profileData.contextList = contx;
       }
     },
     displayAdd(menu = "", item = null) {
@@ -437,6 +429,37 @@ export default {
           contextList: [],
         };
       }
+    },
+    async getApis() {
+      let apiContext = SpinalGraphService.getContext(API_LIST_CONTEXT);
+      console.log(apiContext);
+      const api = await SpinalGraphService.getChildrenInContext(
+        apiContext.info.id.get(),
+        apiContext.info.id.get()
+      );
+      console.log(api);
+      if (api.length > 0) {
+        api.map((res) => {
+          let data = {
+            name: null,
+            children: [],
+          };
+          data.name = res.name.get();
+          res.childrenIds.map(async (elt) => {
+            const node = await SpinalGraphService.getNodeAsync(elt);
+            let rep = {
+              id: node.id.get(),
+              name: node.name.get(),
+              method: node.method.get(),
+              scope: node.scope.get(),
+              tag: node.tag.get(),
+            };
+            data.children.push(rep);
+          });
+          this.tagsList.push(data);
+        });
+      }
+      console.log(this.tagsList);
     },
     async getAppProfile() {
       const prof = await SpinalGraphService.getChildrenInContext(
@@ -477,77 +500,6 @@ export default {
       console.log(this.profiles);
     },
 
-    readFile(ev) {
-      const file = ev.target.files[0];
-      const reader = new FileReader();
-      if (file.name.includes(".json")) {
-        reader.onload = (res) => {
-          this.fileSwagger = res.target.result;
-          this.parseSwaggerJson(JSON.parse(this.fileSwagger));
-        };
-        reader.onerror = (err) => console.log(err);
-        reader.readAsText(file);
-      }
-    },
-
-    parseSwaggerJson(swagger) {
-      console.log(swagger.paths);
-      const paths = swagger.paths;
-      let tags = [];
-      let datas = [];
-      for (var key in paths) {
-        let item = {
-          name: key,
-          method: null,
-          tag: null,
-          scope: null,
-        };
-        if (paths[key].get) {
-          item.method = "GET";
-          item.tag = paths[key].get.tags[0];
-          if (paths[key].get.security) {
-            item.scope = paths[key].get.security[0].OauthSecurity[0];
-          }
-        } else if (paths[key].post) {
-          item.method = "POST";
-          item.tag = paths[key].post.tags[0];
-          if (paths[key].post.security) {
-            item.scope = paths[key].post.security[0].OauthSecurity[0];
-          }
-        } else if (paths[key].put) {
-          item.method = "PUT";
-          item.tag = paths[key].put.tags[0];
-          if (paths[key].put.security) {
-            item.scope = paths[key].put.security[0].OauthSecurity[0];
-          }
-        } else if (paths[key].delete) {
-          item.method = "DELETE";
-          item.tag = paths[key].delete.tags[0];
-          if (paths[key].delete.security) {
-            item.scope = paths[key].delete.security[0].OauthSecurity[0];
-          }
-        }
-
-        datas.push(item);
-      }
-      const groups = datas.reduce((groups, item) => {
-        const group = groups[item.tag] || [];
-        group.push(item);
-        groups[item.tag] = group;
-        return groups;
-      }, {});
-
-      console.log(groups);
-      let data;
-      for (var key in groups) {
-        data = {
-          name: key,
-          children: groups[key],
-        };
-        this.tagsList.push(data);
-      }
-      console.log(this.tagsList);
-    },
     async saveProfile() {
       console.log(this.profileData);
       const graphContext = new SpinalGraph("GraphContext");
