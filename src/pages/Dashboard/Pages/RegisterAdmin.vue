@@ -26,7 +26,7 @@
             <h5 class="text-white">
               Token de la plateforme d'administration :
               <span class="text-success" v-if="tokenAdmin.length > 8">{{
-                tokenAdmin.substring(0, 8) + ".."
+                tokenAdmin.substring(0, 8) + "..."
               }}</span>
             </h5>
           </div>

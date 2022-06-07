@@ -17,17 +17,10 @@
 import { Pagination } from "../../../components";
 import Fuse from "fuse.js";
 import { SpinalGraphService } from "spinal-env-viewer-graph-service";
-import { SpinalTwinServiceRole } from "spinal-service-spinaltwin-admin";
 import { spinalIO } from "../../../services/spinalIO";
 import "vue-good-table/dist/vue-good-table.css";
 import { VueGoodTable } from "vue-good-table";
-import {
-  ROLE_LIST_CONTEXT,
-  SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST,
-  SPINALTWIN_DESCRIPTION_CONTEXT,
-} from "../../../constant";
-// import { SlideYDownTransition } from "vue2-transitions";
-// import Places from 'vue-places'
+import { ORGAN_LIST_CONTEXT } from "../../../constant";
 export default {
   name: "OrganList",
   components: { Pagination, VueGoodTable },
@@ -56,7 +49,7 @@ export default {
           "Avatar size should be less than 2 MB!",
       ],
       select: null,
-      appList: [],
+      organList: [],
       app: {
         name: "",
       },
@@ -97,7 +90,7 @@ export default {
     total() {
       return this.searchedData.length > 0
         ? this.searchedData.length
-        : this.appList.length;
+        : this.organList.length;
     },
   },
   created: async function () {
@@ -109,7 +102,6 @@ export default {
       await SpinalGraphService.setGraph(graph);
     }
     if (url) {
-      console.log(url);
       await this.getApps();
     }
   },
@@ -134,10 +126,9 @@ export default {
         };
       }
     },
-    async getApps() {
-      this.appContext = SpinalGraphService.getContext(
-        SPINALTWIN_DESCRIPTION_CONTEXT
-      );
+    //nom, key unique, type,
+    async getOrgans() {
+      this.appContext = SpinalGraphService.getContext(ORGAN_LIST_CONTEXT);
       const app = await SpinalGraphService.getChildrenInContext(
         this.appContext.info.id.get(),
         this.appContext.info.id.get()
@@ -149,40 +140,10 @@ export default {
             children: [],
           };
           data.name = res.name.get();
-          res.childrenIds.map(async (elt) => {
-            const node = await SpinalGraphService.getNodeAsync(elt);
-            let rep = {
-              id: node.id.get(),
-              name: node.name.get(),
-            };
-            data.children.push(rep);
-          });
-          this.appList.push(data);
+          this.organList.push(data);
         });
       }
-      console.log(this.appList);
     },
-    /*async saveRole() {
-      console.log(this.role.id.get());
-      if (this.role.id.get()) {
-        console.log(this.role.name);
-        const res = SpinalTwinServiceRole.updateRole(
-          this.role.name,
-          this.role.id.get()
-        );
-        console.log(res);
-      } else {
-        if (this.role.name) {
-          await SpinalTwinServiceRole.createRole(this.role);
-        }
-      }
-      this.display = false;
-      this.getRoles();
-    },
-    cancelAdd() {
-      this.display = false;
-      this.$refs.form.reset();
-    },*/
   },
   mounted() {
     // Fuse search initialization.

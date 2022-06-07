@@ -129,11 +129,23 @@
                       </md-field>
                     </ValidationProvider>
                     <br />
+                  </div>
+                  <div
+                    class="md-layout-item md-size-100 mt-4 md-small-size-100"
+                  >
                     <ValidationProvider name="name">
                       <label>Contextes généraux</label>
-                      <div :key="item" v-for="item in contexteRequired">
-                        <md-checkbox v-model="addScene" :value="item">
-                          {{ item.info.name.get() }}</md-checkbox
+                      <div>
+                        <md-checkbox
+                          v-for="it in contexteRequired"
+                          v-model="addScene"
+                          :value="it"
+                          :true-value="it"
+                          disabled
+                          @hook:mounted="setCheckedGeneralContext(it)"
+                          checked
+                        >
+                          {{ it.info.name.get() }}</md-checkbox
                         >
                       </div>
                     </ValidationProvider>
@@ -149,76 +161,64 @@
                         enabled: true,
                         collapsable: true,
                       }"
+                      @on-row-click="onRowClick"
                       @on-selected-rows-change="selectApp"
-                    />
+                    >
+                      <template slot="table-row" slot-scope="props">
+                        <span
+                          v-if="enable == true && props.row.name == row.name"
+                        >
+                          <span style="font-weight: bold; color: blue">{{
+                            props.row.name
+                          }}</span>
+                        </span>
+                        <span v-else>
+                          {{ props.formattedRow[props.column.field] }}
+                        </span>
+                      </template>
+                    </vue-good-table>
                   </div>
-                  <div class="md-layout-item md-size-50 mt-4 md-small-size-50">
-                    <div :key="item" v-for="item in digitalContextListComputed">
+                  <div
+                    v-if="sState == 'add'"
+                    class="md-layout-item md-size-50 mt-4 md-small-size-50"
+                  >
+                    <div>
                       <md-checkbox
+                        v-for="elt in digitalContextListComputed"
                         v-model="profileData.buildContextList"
-                        :value="item"
+                        :value="elt"
                       >
-                        {{ item.name }}</md-checkbox
+                        {{ elt.name }}</md-checkbox
                       >
                     </div>
-                    <!--<table
-                      class="table table-striped table-hover"
-                      v-if="digitalContextListComputed.length > 0"
-                    >
-                      <thead>
-                        <tr>
-                          <th>
-                            <label class="form-checkbox">
-                              <input
-                                type="checkbox"
-                                v-model="selectAll"
-                                @click="select"
-                              />
-                              <i class="form-icon"></i>
-                            </label>
-                          </th>
-                          <th style="font-size: 16px">Liste des contextes</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="i in digitalContextListComputed">
-                          <td>
-                            <label class="form-checkbox">
-                              <input
-                                type="checkbox"
-                                :value="i"
-                                v-model="profileData.contextList"
-                              />
-                              <i class="form-icon"></i>
-                            </label>
-                          </td>
-                          <td>{{ i.name }}</td>
-                        </tr>
-                      </tbody>
-                    </table>-->
-                    <!--<h4 class="text-center text-primary" style="font-weight: bold">
-                Liste d'applications autorisées
-              </h4>
-              <br />
-              <md-table
-                :value="profileData.appList"
-                class="paginated-table table-striped table-hover"
-              >
-                <hr />
-                <md-table-row slot="md-table-row" slot-scope="{ item }">
-                  <md-table-cell md-label="Applications" md-sort-by="name"
-                    ><span class="text-success" style="font-weight: bold">
-                      {{ item.data.name }}
-                    </span></md-table-cell
+                  </div>
+
+                  <div
+                    v-if="sState == 'edit'"
+                    class="md-layout-item md-size-50 mt-4 md-small-size-50"
                   >
-                  <md-table-cell md-label="Rôle d'accès">
-                    <label v-for="(rol, index) in item.role">
-                      <template v-if="index > 0">,</template>
-                      <span class="text-primary">{{ rol.name }}</span>
-                    </label>
-                  </md-table-cell>
-                </md-table-row>
-              </md-table>-->
+                    <div>
+                      <md-checkbox
+                        v-for="elt in listUpdate"
+                        v-model="updateProfileData"
+                        :value="elt"
+                        :true-value="elt"
+                        @hook:mounted="setChecked(elt)"
+                        checked
+                      >
+                        {{ elt.name }}</md-checkbox
+                      >
+                    </div>
+                    <hr />
+                    <div>
+                      <md-checkbox
+                        v-for="elt in digitalContextListComputed"
+                        v-model="profileData.buildContextList"
+                        :value="elt"
+                      >
+                        {{ elt.name }}</md-checkbox
+                      >
+                    </div>
                   </div>
                 </div>
               </div>
@@ -235,33 +235,6 @@
               </md-card-actions>
             </form>
           </ValidationObserver>
-          <div class="md-layout" v-if="display === true">
-            <!--<div class="md-layout-item md-size-50 mt-4 md-small-size-100">
-              <h4 class="text-center text-primary" style="font-weight: bold">
-                Liste de contextes autorisées
-              </h4>
-              <br />
-              <md-table
-                :value="profileData.buildContextList"
-                class="paginated-table table-striped table-hover"
-              >
-                <hr />
-                <md-table-row slot="md-table-row" slot-scope="{ item }">
-                  <md-table-cell md-label="Contextes" md-sort-by="name">
-                    <span class="text-success" style="font-weight: bold">
-                      {{ item.data.name }}
-                    </span>
-                  </md-table-cell>
-                  <md-table-cell md-label="Rôle d'accès">
-                    <label v-for="(rol, index) in item.role">
-                      <template v-if="index > 0">,</template>
-                      <span class="text-primary">{{ rol.name }}</span>
-                    </label>
-                  </md-table-cell>
-                </md-table-row>
-              </md-table>
-            </div>-->
-          </div>
         </md-card-content>
         <md-card-actions md-alignment="space-between" v-if="display === false">
           <div class="">
@@ -351,7 +324,9 @@ export default {
         appList: [],
         buildContextList: [],
       },
+      updateProfileData: [],
       profiles: [],
+      listUpdate: [],
       profileContext: null,
       digitalContextList: [],
       roleList: [],
@@ -362,10 +337,12 @@ export default {
       },
       list: [],
       contexteRequired: [],
-      addScene: null,
+      addScene: [],
       digitalGraph: SpinalGraph,
       digitalContextListComputed: [],
       sState: "",
+      enable: false,
+      row: null,
       columns: [
         {
           label: "Applications",
@@ -448,13 +425,44 @@ export default {
         return b[sortBy].localeCompare(a[sortBy]);
       });
     },
+    setChecked(ind) {
+      this.updateProfileData.push(ind);
+    },
+    setCheckedGeneralContext(ind) {
+      this.addScene.push(ind);
+    },
+    onRowClick(params) {
+      console.log(params);
+      if (params.selected === false) {
+        this.enable = false;
+        let data = this.listUpdate.filter(function (f) {
+          console.log(f);
+          return f.type !== params.row.typeContext[0];
+        });
+        this.listUpdate = data;
+
+        let newAr = this.profileData.buildContextList.filter(function (f) {
+          return f.type !== params.row.typeContext[0];
+        });
+        console.log(newAr);
+        this.profileData.buildContextList = newAr;
+
+        console.log(this.listUpdate);
+        console.log(this.digitalContextListComputed);
+        console.log(this.profileData.buildContextList);
+      } else {
+        this.enable = true;
+        this.row = params.row;
+        this.loadContext(params.row);
+      }
+    },
+
     selectApp(params) {
       console.log(params);
       this.selectedApps = [];
       this.profileData.appList = [];
       if (!this.selectAllApps) {
         for (let i in params.selectedRows) {
-          this.loadContext(params.selectedRows[i]);
           let res = {
             id: params.selectedRows[i].id,
             name: params.selectedRows[i].name,
@@ -466,17 +474,15 @@ export default {
           this.selectedApps.push(res);
         }
         this.profileData.appList = this.selectedApps;
-
         console.log(this.digitalContextListComputed);
       }
     },
+
     loadContext(app) {
-      //,app
       this.digitalContextListComputed = [];
       let digitalContextList = [];
       let lists = this.list;
       lists.forEach((item) => {
-        console.log(item);
         app.typeContext.forEach((element) => {
           if (item.info.type.get() === element) {
             if (digitalContextList.length === 0) {
@@ -484,12 +490,6 @@ export default {
             } else {
               console.log("here");
               digitalContextList.filter(function (elem) {
-                console.log(elem);
-                console.log(
-                  "comparaison",
-                  elem.info.name.get(),
-                  item.info.name.get()
-                );
                 if (elem.info.name.get() != item.info.name.get()) {
                   digitalContextList.push(item);
                 }
@@ -504,6 +504,7 @@ export default {
         return {
           id: res.info.id?.get(),
           name: res.info.name?.get() ?? "no name",
+          type: res.info.type?.get(),
         };
       });
       console.log(this.digitalContextListComputed);
@@ -524,96 +525,48 @@ export default {
         this.profiles.buildContextList = contx;
       }
     },
-    openConfig(section) {
-      this.configData = {
-        data: null,
-        role: null,
-      };
-      this.config = section;
-    },
     async displayAdd(menu = "", item = null) {
       this.display = true;
       this.sState = menu;
+
+      this.contexteRequired = this.list.filter((elt) => {
+        if (
+          elt.info.type.get() === "SpinalService" ||
+          elt.info.type.get() === "geographicContext"
+        ) {
+          return elt;
+        }
+      });
       if (this.sState == "edit" && item != null) {
-        console.log(item);
         this.profileData = item;
+        console.log(this.profileData.buildContextList);
+        this.listUpdate = this.profileData.buildContextList;
+        let newAr = this.listUpdate.filter((elt) => {
+          console.log(elt.name);
+          return elt.name != "Scenes" && elt.name != "spatial";
+        });
+        this.listUpdate = newAr;
+        console.log(this.listUpdate);
+        /*let newAr = [];
+        this.listUpdate.filter((elt) => {
+          this.contexteRequired.forEach((element) => {
+            if (element.info.name?.get() != elt.name) {
+              newAr.push(elt);
+            }
+          });
+        });*/
+        console.log(newAr);
         await this.getApp();
       }
       if (this.sState == "detail" && item != null) {
         this.profileData = item;
       }
       if (this.sState == "add") {
-        this.contexteRequired = this.list.filter((elt) => {
-          if (elt.info.type.get() === "SpinalService") {
-            return elt;
-          }
-        });
-        console.log(this.contexteRequired);
         this.profileData = {
           name: null,
           appList: [],
           buildContextList: [],
         };
-      }
-    },
-    saveConfig(sect) {
-      const checkIndex = (res) => res.data.name === this.configData.data.name;
-
-      if (sect == "app") {
-        console.log(this.configData);
-        const index = this.profileData.appList.findIndex(checkIndex);
-        if (index != -1) {
-          console.log(index);
-          this.profileData.appList.splice(index, 1, this.configData);
-          console.log(this.profileData.appList);
-        } else {
-          this.profileData.appList.push(this.configData);
-          this.configData = {
-            data: null,
-            role: null,
-          };
-        }
-      }
-      if (sect == "contexte") {
-        const index = this.profileData.buildContextList.findIndex(checkIndex);
-        if (index != -1) {
-          console.log(index);
-          this.profileData.buildContextList.splice(index, 1, this.configData);
-          console.log(this.profileData.buildContextList);
-        } else {
-          this.profileData.buildContextList.push(this.configData);
-          this.configData = {
-            data: null,
-            role: null,
-          };
-        }
-      }
-    },
-    editConfig(sect, item) {
-      this.config = sect;
-      if (item) {
-        this.configData = item;
-      }
-    },
-    deleteConfig(sect, item) {
-      if (item) {
-        this.configData = item;
-        const checkIndex = (res) => res.data.name === this.configData.data.name;
-        if (sect === "app") {
-          const index = this.profileData.appList.findIndex(checkIndex);
-          if (index != -1) {
-            console.log(index);
-            this.profileData.appList.splice(index, 1);
-          }
-        }
-        if (sect === "contexte") {
-          const index = this.profileData.buildContextList.findIndex(checkIndex);
-          if (index != -1) {
-            console.log(index);
-            this.profileData.buildContextList.splice(index, 1);
-            console.log(this.profileData.buildContextList);
-          }
-        }
       }
     },
     async getUserProfile() {
@@ -648,6 +601,7 @@ export default {
               return {
                 id: el.id,
                 name: el.name,
+                type: el.type,
               };
             });
           }
@@ -674,12 +628,10 @@ export default {
           data.name = res.name.get();
           res.childrenIds.map(async (elt) => {
             const node = await SpinalGraphService.getNodeAsync(elt);
-            console.log(node);
             let rep;
             if (this.sState == "edit") {
               this.profileData.appList.map((el) => {
                 if (el.name === node.name.get()) {
-                  console.log("count 1", el);
                   rep = {
                     id: node.id.get(),
                     name: node.name.get(),
@@ -689,21 +641,23 @@ export default {
                     vgt_id: el.vgt_id,
                   };
                 } else if (el.name != node.name.get() && !el.originalIndex) {
-                  console.log("comparaison", el.name, node.name.get());
                   rep = {
                     id: node.id.get(),
                     name: node.name.get(),
-                    typeContext: node.typeContext.get(),
+                    typeContext:
+                      node.typeContext != undefined
+                        ? node.typeContext.get()
+                        : null,
                   };
                 }
               });
             } else {
-              if (node.typeContext.get())
-                rep = {
-                  id: node.id.get(),
-                  name: node.name.get(),
-                  typeContext: node.typeContext.get(),
-                };
+              rep = {
+                id: node.id.get(),
+                name: node.name.get(),
+                typeContext:
+                  node.typeContext != undefined ? node.typeContext.get() : null,
+              };
             }
             if (rep != undefined) {
               data.children.push(rep);
@@ -735,12 +689,16 @@ export default {
     },
     async saveProfile() {
       this.profiles = [];
-      console.log(this.addScene);
-      let scene = {
-        id: this.addScene.info.id?.get(),
-        name: this.addScene.info.name?.get() ?? "no name",
-      };
-      this.profileData.buildContextList.push(scene);
+      if (!this.profileData.id) {
+        this.addScene.forEach((element) => {
+          let scene = {
+            id: element.info.id?.get(),
+            name: element.info.name?.get() ?? "no name",
+            type: element.info.type?.get(),
+          };
+          this.profileData.buildContextList.push(scene);
+        });
+      }
       console.log(this.profileData);
       const graphContext = new SpinalGraph("GraphContext");
       if (this.profileData.buildContextList.length > 0) {

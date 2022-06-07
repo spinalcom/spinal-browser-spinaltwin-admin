@@ -60,9 +60,11 @@
               }}</md-table-cell>
 
               <md-table-cell md-label="Routes d'accès" md-sort-by="tagsList">
-                <label v-for="(tag, index) in item.tagsList">
-                  <template v-if="index > 0">,</template>
+                <label v-for="(tag, index) in item.tagsList.slice(0, 2)">
                   {{ tag.name }}
+                  <template v-if="item.tagsList.length > 2 && index > 0"
+                    >...</template
+                  >
                 </label>
               </md-table-cell>
               <md-table-cell
@@ -167,38 +169,19 @@
                     />
                   </div>
                   <div class="md-layout-item md-size-30 mt-4 md-small-size-100">
-                    <table class="table table-striped table-hover">
-                      <thead>
-                        <tr>
-                          <th>
-                            <label class="form-checkbox">
-                              <input
-                                type="checkbox"
-                                v-model="selectAll"
-                                @click="select"
-                              />
-                              <i class="form-icon"></i>
-                            </label>
-                          </th>
-                          <th style="font-size: 16px">Liste des contextes</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="i in digitalContextListComputed">
-                          <td>
-                            <label class="form-checkbox">
-                              <input
-                                type="checkbox"
-                                :value="i"
-                                v-model="profileData.contextList"
-                              />
-                              <i class="form-icon"></i>
-                            </label>
-                          </td>
-                          <td>{{ i.name }}</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                    <div v-if="contextList">
+                      <vue-good-table
+                        :columns="columns2"
+                        :rows="contextList"
+                        :select-options="{ enabled: true }"
+                        :search-options="{ enabled: true }"
+                        :group-options="{
+                          enabled: true,
+                          collapsable: true,
+                        }"
+                        @on-selected-rows-change="select"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -280,6 +263,7 @@ export default {
       selectAllRoutes: false,
       selectedRoutes: [],
       selected: [],
+      contextList: [],
       configAccessAPI: {
         nameTag: null,
         rest: {
@@ -291,6 +275,12 @@ export default {
       },
       tagsList: [],
       fileSwagger: null,
+      columns2: [
+        {
+          label: "Context",
+          field: "name",
+        },
+      ],
       columns: [
         {
           label: "Routes",
@@ -338,6 +328,7 @@ export default {
         return {
           id: res.info.id?.get(),
           name: res.info.name?.get() ?? "no name",
+          type: res.info.type?.get(),
         };
       });
     },
@@ -353,9 +344,7 @@ export default {
       await SpinalGraphService.setGraph(graph);
     }
     if (url) {
-      console.log(url);
       this.digitalGraph = await spinalIO.load(url);
-      console.log(await this.digitalGraph.getChildren());
       list = await this.digitalGraph.getChildren();
       for (i; i < list.length; i++) {
         this.digitalContextList.push(list[i]);
@@ -363,8 +352,8 @@ export default {
       this.profileContext = SpinalGraphService.getContext(
         APP_PROFILE_LIST_CONTEXT
       );
-      console.log(this.profileContext);
 
+      await this.getContextDigitalTwin();
       await this.getAppProfile();
       await this.getApis();
     }
@@ -380,7 +369,6 @@ export default {
       });
     },
     selectRoutes(params) {
-      console.log(params);
       this.selectedRoutes = [];
       this.profileData.tagsList = [];
       if (!this.selectAllRoutes) {
@@ -390,33 +378,38 @@ export default {
             method: params.selectedRows[i].method,
             scope: params.selectedRows[i].scope,
             id: params.selectedRows[i].id,
+            originalIndex: params.selectedRows[i].originalIndex,
+            vgtSelected: params.selectedRows[i].vgtSelected,
+            vgt_id: params.selectedRows[i].vgt_id,
           };
           this.selectedRoutes.push(res);
         }
         this.profileData.tagsList = this.selectedRoutes;
       }
     },
-    select() {
+    select(params) {
       this.selected = [];
       this.profileData.contextList = [];
-      console.log(this.selected);
       if (!this.selectAll) {
         let contx;
-        for (let i in this.digitalContextListComputed) {
+        for (let i in params.selectedRows) {
           contx = {
-            id: this.digitalContextListComputed[i].id,
-            data: this.digitalContextListComputed[i].name,
+            id: params.selectedRows[i].id,
+            data: params.selectedRows[i].name,
+            type: params.selectedRows[i].type,
+            originalIndex: params.selectedRows[i].originalIndex,
+            vgtSelected: params.selectedRows[i].vgtSelected,
+            vgt_id: params.selectedRows[i].vgt_id,
           };
           this.selected.push(contx);
         }
-        this.profileData.contextList = contx;
+        this.profileData.contextList = this.selected;
       }
     },
     displayAdd(menu = "", item = null) {
       this.display = true;
       this.sState = menu;
       if (this.sState == "edit" && item != null) {
-        console.log(item);
         this.profileData = item;
       }
       if (this.sState == "detail" && item != null) {
@@ -430,14 +423,27 @@ export default {
         };
       }
     },
+    async getContextDigitalTwin() {
+      let result = this.digitalContextListComputed.reduce(function (r, a) {
+        r[a.type] = r[a.type] || [];
+        r[a.type].push(a);
+        return r;
+      }, Object.create(null));
+
+      for (var key in result) {
+        let data = {
+          name: key,
+          children: result[key],
+        };
+        this.contextList.push(data);
+      }
+    },
     async getApis() {
       let apiContext = SpinalGraphService.getContext(API_LIST_CONTEXT);
-      console.log(apiContext);
       const api = await SpinalGraphService.getChildrenInContext(
         apiContext.info.id.get(),
         apiContext.info.id.get()
       );
-      console.log(api);
       if (api.length > 0) {
         api.map((res) => {
           let data = {
@@ -449,24 +455,22 @@ export default {
             const node = await SpinalGraphService.getNodeAsync(elt);
             let rep = {
               id: node.id.get(),
-              name: node.name.get(),
-              method: node.method.get(),
-              scope: node.scope.get(),
-              tag: node.tag.get(),
+              name: node.name?.get(),
+              method: node.method?.get(),
+              scope: node.scope?.get(),
+              tag: node.tag?.get(),
             };
             data.children.push(rep);
           });
           this.tagsList.push(data);
         });
       }
-      console.log(this.tagsList);
     },
     async getAppProfile() {
       const prof = await SpinalGraphService.getChildrenInContext(
         this.profileContext.info.id.get(),
         this.profileContext.info.id.get()
       );
-      console.log(prof);
       if (prof.length > 0) {
         prof.map((res) => {
           let data = {
@@ -497,11 +501,9 @@ export default {
           this.profiles.push(data);
         });
       }
-      console.log(this.profiles);
     },
 
     async saveProfile() {
-      console.log(this.profileData);
       const graphContext = new SpinalGraph("GraphContext");
       if (this.profileData.contextList.length > 0) {
         this.profileData.contextList.forEach(async (element) => {
@@ -510,14 +512,12 @@ export default {
         });
       }
       this.profiles = [];
-      console.log(this.profileData);
       if (this.profileData.id) {
         const res = SpinalTwinServiceAppProfile.updateAppProfile(
           this.profileData,
           this.profileData.id,
           graphContext
         );
-        console.log(res);
       } else {
         await SpinalTwinServiceAppProfile.createAppProfile(
           this.profileData,
