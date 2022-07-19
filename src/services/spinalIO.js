@@ -77,11 +77,11 @@ class SpinalIO {
                 110,
                 1,
             ];
-            const str = crypt_1.decriAes(k, encryptedHex);
+            const str = (0, crypt_1.decriAes)(k, encryptedHex);
             return JSON.parse(str);
         }
         catch (e) {
-            const str = crypt_1.decriB64(encryptedHex);
+            const str = (0, crypt_1.decriB64)(encryptedHex);
             try {
                 return JSON.parse(str);
             }
@@ -140,13 +140,13 @@ class SpinalIO {
             throw new Error('No "path" attribute found in the url');
         const k = [10, 95, 124, 68, 55, 24, 90, 57, 34, 65, 81, 22, 75, 7, 110, 1];
         try {
-            const decripted = crypt_1.decriAes(k, cryptedPath);
+            const decripted = (0, crypt_1.decriAes)(k, cryptedPath);
             if (decripted[0] !== '/')
                 throw 'not a path';
             return decripted;
         }
         catch (e) {
-            const decripted = crypt_1.decriB64(cryptedPath);
+            const decripted = (0, crypt_1.decriB64)(cryptedPath);
             return this.load('/__users__/public/digital_twin/default');
         }
     }
@@ -156,7 +156,7 @@ class SpinalIO {
             return this.load(path);
         }
         catch (e) {
-            return this.load('/__users__/admin/Digital twin');
+            return this.load(localStorage.getItem("digitalGraphURL"));
         }
     }
     load(path) {

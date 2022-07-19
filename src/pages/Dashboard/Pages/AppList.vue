@@ -156,7 +156,6 @@ export default {
       await SpinalGraphService.setGraph(graph);
     }
     if (url) {
-      console.log(url);
       await this.getApps();
     }
   },
@@ -208,27 +207,6 @@ export default {
         });
       }
     },
-    /*async saveRole() {
-      console.log(this.role.id.get());
-      if (this.role.id.get()) {
-        console.log(this.role.name);
-        const res = SpinalTwinServiceRole.updateRole(
-          this.role.name,
-          this.role.id.get()
-        );
-        console.log(res);
-      } else {
-        if (this.role.name) {
-          await SpinalTwinServiceRole.createRole(this.role);
-        }
-      }
-      this.display = false;
-      this.getRoles();
-    },
-    cancelAdd() {
-      this.display = false;
-      this.$refs.form.reset();
-    },*/
   },
   mounted() {
     // Fuse search initialization.

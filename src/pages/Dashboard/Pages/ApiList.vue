@@ -32,34 +32,17 @@
             />
           </div>
 
-          <ValidationObserver ref="form" v-if="display === true">
-            <form @submit.prevent="validate">
+          <div ref="form" v-if="display === true">
+            <form>
               <div>
                 <div class="md-layout">
                   <div class="md-layout-item md-size-60 mt-4 md-small-size-100">
-                    <ValidationProvider
-                      name="fileSwagger"
-                      v-slot="{ passed, failed }"
-                    >
+                    
                       <md-field
-                        :class="[
-                          { 'md-error': failed },
-                          { 'md-valid': passed },
-                          { 'md-form-group': true },
-                        ]"
                       >
                         <md-input @change="readFile" type="file"> </md-input>
 
-                        <slide-y-down-transition>
-                          <md-icon class="error" v-show="failed">close</md-icon>
-                        </slide-y-down-transition>
-                        <slide-y-down-transition>
-                          <md-icon class="success" v-show="passed"
-                            >done</md-icon
-                          >
-                        </slide-y-down-transition>
                       </md-field>
-                    </ValidationProvider>
                   </div>
                   <div
                     class="md-layout-item md-size-70 mt-4 md-small-size-100"
@@ -89,7 +72,7 @@
                 </div>
               </md-card-actions>
             </form>
-          </ValidationObserver>
+          </div>
         </md-card-content>
       </md-card>
     </div>
@@ -103,6 +86,7 @@ import { SpinalTwinServiceRole } from "spinal-service-spinaltwin-admin";
 import { spinalIO } from "../../../services/spinalIO";
 import "vue-good-table/dist/vue-good-table.css";
 import { VueGoodTable } from "vue-good-table";
+import Swal from "sweetalert2";
 import {
   API_LIST_CONTEXT,
   HAS_API_IN_GROUP_RELATION,
@@ -193,7 +177,6 @@ export default {
       await SpinalGraphService.setGraph(graph);
     }
     if (url) {
-      console.log(url);
       await this.getApis();
     }
   },
@@ -221,7 +204,6 @@ export default {
     async getApis() {
       this.apiList = [];
       this.apiContext = SpinalGraphService.getContext(API_LIST_CONTEXT);
-      console.log(this.apiContext);
       let api = await SpinalGraphService.getChildren(
         this.apiContext.info.id.get()
       );
@@ -237,32 +219,30 @@ export default {
             let rep = {
               id: node.id.get(),
               name: node.name.get(),
-              method: node.method.get(),
-              scope: node.scope.get(),
-              tag: node.tag.get(),
+              method: node.method?.get(),
+              scope: node.scope?.get(),
+              tag: node.tag?.get(),
             };
             data.children.push(rep);
           });
           this.apiList.push(data);
         });
       }
-      console.log(this.apiList);
     },
     readFile(ev) {
       const file = ev.target.files[0];
-      const reader = new FileReader();
       if (file.name.includes(".json")) {
+        const reader = new FileReader();
         reader.onload = (res) => {
           this.fileSwagger = res.target.result;
           this.parseSwaggerJson(JSON.parse(this.fileSwagger));
         };
-        reader.onerror = (err) => console.log(err);
         reader.readAsText(file);
       }
     },
 
     parseSwaggerJson(swagger) {
-      console.log(swagger.paths);
+      console.log("Parseeeee");
       const paths = swagger.paths;
       let datas = [];
       for (var key in paths) {
@@ -306,21 +286,18 @@ export default {
         groups[item.tag] = group;
         return groups;
       }, {});
-
-      console.log(groups);
       let data;
       for (var key in groups) {
         data = {
           name: key,
           children: groups[key],
         };
+        console.log(data)
         this.tagsList.push(data);
       }
-      console.log(this.tagsList);
     },
 
     async saveApi() {
-      console.log(this.apiContext);
       let allChildren = await SpinalGraphService.getChildrenInContext(
         this.apiContext.info.id.get(),
         this.apiContext.info.id.get()
@@ -365,13 +342,19 @@ export default {
           }
         });
       }
+      Swal.fire({
+        title: "Beau travail",
+        text: "Les routes d'API ont été enregistré avec succès",
+        type: "success",
+        confirmButtonClass: "md-button md-primary",
+        buttonsStyling: false
+      });
       await this.getApis();
       this.display = false;
     },
     cancelAdd() {
       this.display = false;
       this.tagsList = [];
-      this.$refs.form.reset();
     },
   },
   mounted() {

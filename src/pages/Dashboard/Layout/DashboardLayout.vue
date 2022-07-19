@@ -151,7 +151,6 @@ export default {
     },
     back() {
       const token = sessionStorage.getItem("tokenKey");
-      console.log(token);
     },
   },
   updated() {

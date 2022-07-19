@@ -321,7 +321,6 @@ export default {
       );
       if (us.length > 0) {
         us.forEach(res => {
-          console.log(res);
 
           let data = {
             id: res.id.get(),
@@ -334,7 +333,6 @@ export default {
           this.users.push(data);
         });
       }
-      console.log(this.users);
     },
     async getProfiles() {
       const profileContext = SpinalGraphService.getContext(
@@ -351,9 +349,7 @@ export default {
           this.userData,
           this.userData.id
         );
-        console.log(res);
       } else {
-        console.log(this.userData);
         /*this.userData.password = generator.generate({
           length: 10,
           numbers: true
@@ -369,7 +365,6 @@ export default {
           .then(response => {
             this.display = false;
             this.getUser();
-            console.log(response);
           });*/
       }
     },

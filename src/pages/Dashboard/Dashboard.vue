@@ -108,11 +108,14 @@ import Multiselect from "vue-multiselect";
 import {
   DATA_LIST_CONTEXT,
   ADD_DIGITALTWIN,
+  HUB_USER,
+  URL_BOS_CONFIG,
   SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST,
 } from "../../constant";
+import axios from "axios";
 import { spinalIO } from "../../services/spinalIO";
 import { SpinalGraphService } from "spinal-env-viewer-graph-service";
-import { Model } from "spinal-core-connectorjs_type";
+import { Model, spinalCore, SpinalUserManager } from "spinal-core-connectorjs_type";
 export default {
   name: "Dashboard",
   components: { Multiselect },
@@ -140,7 +143,6 @@ export default {
       const url = atob(this.$route.query.path);
       localStorage.setItem("urlSpinalTwinGraph", url);
       this.urlSpinalTwinAdmin = localStorage.getItem("urlSpinalTwinGraph");
-      console.log(this.urlSpinalTwinAdmin);
     }
   },
   created: async function () {
@@ -148,28 +150,31 @@ export default {
       localStorage.getItem("urlSpinalTwinGraph")
     );
     await SpinalGraphService.setGraph(graph);
-
-    console.log(SpinalGraphService);
     this.dataListContext = SpinalGraphService.getContext(DATA_LIST_CONTEXT);
-    console.log(this.dataListContext);
     this.getDigitalTwin();
-
-    if (localStorage.getItem("nameDigitalTwinCurrent")) {
-      this.nameDigitalTwin = localStorage.getItem("nameDigitalTwinCurrent");
-      this.changeDGT = false;
-    }
   },
   methods: {
     getDigitalTwin() {
-      console.log(this.dataListContext);
       if (this.dataListContext) {
         const result = SpinalGraphService.getChildren(
           this.dataListContext.info.id.get()
         )
-          .then(async (res) => {
-            this.digitalList = res;
+          .then(async (res) => { 
+             res.map((rep) => {
+                let data =  {
+                  id: rep.id?.get(),
+                  name: rep.name?.get() ?? "no name",
+                  url: rep.url?.get(),
+                };
+
+                this.digitalList.push(data)
+              });
             if (this.digitalList.length < 1) {
               localStorage.removeItem("nameDigitalTwinCurrent");
+            } else if (localStorage.getItem("nameDigitalTwinCurrent")){
+              this.nameDigitalTwin = localStorage.getItem("nameDigitalTwinCurrent");
+              this.changeDGT = false;
+              await this.createUserHub();
             }
           })
           .catch((e) => {
@@ -180,10 +185,13 @@ export default {
         return result;
       }
     },
-    loadDigitalTwin() {
-      localStorage.setItem("nameDigitalTwinCurrent", this.value.name.get());
-      localStorage.setItem("digitalGraphURL", this.value.url.get());
-      console.log(this.value.url.get());
+    async loadDigitalTwin() {
+      localStorage.setItem("nameDigitalTwinCurrent", this.value.name);
+      this.nameDigitalTwin = localStorage.getItem("nameDigitalTwinCurrent");
+      localStorage.setItem("digitalGraphURL", this.value.url);
+      this.changeDGT = false;
+      await this.createUserHub();
+
     },
     displayAdd() {
       this.display = true;
@@ -194,6 +202,83 @@ export default {
     cancelAdd() {
       this.display = false;
       this.$refs.form.reset();
+    },
+    async createUserHub() {
+
+      let context = SpinalGraphService.getContext(HUB_USER);
+
+      const flag_readOnly = spinalCore.right_flag.RD;
+      const flag_WriteRead = spinalCore.right_flag.WR | spinalCore.right_flag.RD;
+
+      let graph = await spinalIO.load(localStorage.getItem("digitalGraphURL"));
+
+      let adminUser = {name: "Super User", password: ""};
+      let integrateurUser = {name: "Integrateur", password: ""};
+      let assetManUser = {name: "Asset Manager", password: ""};
+      let mainteneurUser = {name: "Mainteneur", password: ""};
+      let basicUser = {name: "Simple User", password: ""};
+      let userArray = [
+        adminUser,
+        integrateurUser,
+        assetManUser,
+        mainteneurUser,
+        basicUser
+      ]
+      
+      userArray.forEach(async (element) => {
+        let node;
+        
+        let result = axios
+          .post(`/checkHubUserExist`, {
+            username: element.name,
+          })
+          .then(response => {
+            console.log(response);
+              if (response.data.exist === false) {
+
+            const nodeId = SpinalGraphService.createNode(
+                    element,
+                    undefined
+                  );
+            const result = SpinalGraphService.addChildInContext(
+              context.info.id.get(),
+              nodeId,
+              context.info.id.get(),
+              "HubUserListHasUser",
+              SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST
+            );
+            SpinalUserManager.new_account(
+                  URL_BOS_CONFIG, element.name, element.password
+                );
+                if (element.name === "Super User") {
+                  spinalCore.share_model(
+                        graph._server_id, "Immersion", flag_WriteRead, element.name
+                    );
+                }
+                if (element.name === "Integrateur") {
+                  spinalCore.share_model(
+                        graph._server_id, "Immersion", flag_WriteRead, element.name
+                    );
+                }
+                if (element.name === "Asset Manager") {
+                  spinalCore.share_model(
+                        graph._server_id, "Immersion", flag_WriteRead, element.name
+                    );
+                }
+                if (element.name === "Mainteneur") {
+                  spinalCore.share_model(
+                        graph._server_id, "Immersion", flag_WriteRead, element.name
+                    );
+                }
+                if (element.name === "Simple User") {
+                  spinalCore.share_model(
+                        graph._server_id, "Immersion", flag_WriteRead, element.name
+                    );
+                }
+              }
+          });
+      });
+
     },
     saveDigitalTwin() {
       if (this.digitalTwinData.name && this.digitalTwinData.url) {
@@ -217,6 +302,7 @@ export default {
             console.error(e);
             return Promise.reject(Error("Internal Server Error"));
           });
+        
         return result;
       }
     },

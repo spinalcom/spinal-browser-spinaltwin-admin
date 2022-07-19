@@ -22,16 +22,7 @@
                       track-by="name"
                     ></multiselect>
                     <br />
-                    <ValidationProvider
-                      name="clientId"
-                      v-slot="{ passed, failed }"
-                    >
                       <md-field
-                        :class="[
-                          { 'md-error': failed },
-                          { 'md-valid': passed },
-                          { 'md-form-group': true },
-                        ]"
                       >
                         <label>Identifiant de la plateforme Admin</label>
                         <md-input v-model="credential.clientId" type="text">
@@ -43,18 +34,7 @@
                           <md-icon>autorenew</md-icon>
                         </md-button>
                       </md-field>
-                    </ValidationProvider>
-                    <ValidationProvider
-                      name="clienSecret"
-                      v-slot="{ passed, failed }"
-                    >
                       <md-field
-                        :md-toggle-password="false"
-                        :class="[
-                          { 'md-error': failed },
-                          { 'md-valid': passed },
-                          { 'md-form-group': true },
-                        ]"
                       >
                         <label>Mot de passe client</label>
                         <md-input
@@ -85,7 +65,6 @@
                           <md-icon>autorenew</md-icon>
                         </md-button>
                       </md-field>
-                    </ValidationProvider>
                   </div>
                 </div>
               </div>
@@ -112,7 +91,7 @@ import { SpinalGraphService } from "spinal-env-viewer-graph-service";
 import { SpinalTwinServiceRole } from "spinal-service-spinaltwin-admin";
 import { spinalIO } from "../../../services/spinalIO";
 import Multiselect from "vue-multiselect";
-import VuePassword from "vue-password";
+// import VuePassword from "vue-password";
 import {
   ROLE_LIST_CONTEXT,
   SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST,
@@ -121,7 +100,7 @@ import {
 // import Places from 'vue-places'
 export default {
   name: "Roles",
-  components: { Pagination, Multiselect, VuePassword },
+  components: { Pagination, Multiselect },
   props: {
     type: {
       type: String,
@@ -220,7 +199,6 @@ export default {
       await SpinalGraphService.setGraph(graph);
     }
     if (url) {
-      console.log(url);
     }
   },
   methods: {

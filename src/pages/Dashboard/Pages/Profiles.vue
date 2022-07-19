@@ -90,13 +90,13 @@
                 >
                 <md-icon
                   class="text-center text-primary"
-                  @click.native="displayAdd('detail', item)"
+                  @click.native="displayAdd('delete', item)"
                   >delete</md-icon
                 >
               </md-table-cell>
             </md-table-row>
           </md-table>
-          <ValidationObserver
+          <div
             ref="form"
             v-if="(display === true && sState === 'add') || sState === 'edit'"
           >
@@ -106,34 +106,17 @@
                   <div
                     class="md-layout-item md-size-100 mt-4 md-small-size-100"
                   >
-                    <ValidationProvider name="name" v-slot="{ passed, failed }">
-                      <md-field
-                        :class="[
-                          { 'md-error': failed },
-                          { 'md-valid': passed },
-                          { 'md-form-group': true },
-                        ]"
+                  <md-field
                       >
                         <label>Intitulé</label>
                         <md-input v-model="profileData.name" type="text">
                         </md-input>
-
-                        <slide-y-down-transition>
-                          <md-icon class="error" v-show="failed">close</md-icon>
-                        </slide-y-down-transition>
-                        <slide-y-down-transition>
-                          <md-icon class="success" v-show="passed"
-                            >done</md-icon
-                          >
-                        </slide-y-down-transition>
                       </md-field>
-                    </ValidationProvider>
                     <br />
                   </div>
                   <div
                     class="md-layout-item md-size-100 mt-4 md-small-size-100"
                   >
-                    <ValidationProvider name="name">
                       <label>Contextes généraux</label>
                       <div>
                         <md-checkbox
@@ -148,7 +131,6 @@
                           {{ it.info.name.get() }}</md-checkbox
                         >
                       </div>
-                    </ValidationProvider>
                     <br />
                   </div>
                   <div class="md-layout-item md-size-50 mt-4 md-small-size-50">
@@ -157,11 +139,6 @@
                       :rows="appList"
                       :select-options="{ enabled: true }"
                       :search-options="{ enabled: true }"
-                      :group-options="{
-                        enabled: true,
-                        collapsable: true,
-                      }"
-                      @on-row-click="onRowClick"
                       @on-selected-rows-change="selectApp"
                     >
                       <template slot="table-row" slot-scope="props">
@@ -179,45 +156,16 @@
                     </vue-good-table>
                   </div>
                   <div
-                    v-if="sState == 'add'"
                     class="md-layout-item md-size-50 mt-4 md-small-size-50"
                   >
-                    <div>
-                      <md-checkbox
-                        v-for="elt in digitalContextListComputed"
-                        v-model="profileData.buildContextList"
-                        :value="elt"
-                      >
-                        {{ elt.name }}</md-checkbox
-                      >
-                    </div>
-                  </div>
-
-                  <div
-                    v-if="sState == 'edit'"
-                    class="md-layout-item md-size-50 mt-4 md-small-size-50"
-                  >
-                    <div>
-                      <md-checkbox
-                        v-for="elt in listUpdate"
-                        v-model="updateProfileData"
-                        :value="elt"
-                        :true-value="elt"
-                        @hook:mounted="setChecked(elt)"
-                        checked
-                      >
-                        {{ elt.name }}</md-checkbox
-                      >
-                    </div>
-                    <hr />
-                    <div>
-                      <md-checkbox
-                        v-for="elt in digitalContextListComputed"
-                        v-model="profileData.buildContextList"
-                        :value="elt"
-                      >
-                        {{ elt.name }}</md-checkbox
-                      >
+                  <div v-if="contextList">
+                      <vue-good-table
+                        :columns="columns2"
+                        :rows="contextList"
+                        :select-options="{ enabled: true }"
+                        :search-options="{ enabled: true }"
+                        @on-selected-rows-change="select"
+                      />
                     </div>
                   </div>
                 </div>
@@ -234,7 +182,7 @@
                 </div>
               </md-card-actions>
             </form>
-          </ValidationObserver>
+          </div>
         </md-card-content>
         <md-card-actions md-alignment="space-between" v-if="display === false">
           <div class="">
@@ -261,6 +209,7 @@ import Fuse from "fuse.js";
 import { spinalIO } from "../../../services/spinalIO";
 import { SlideYDownTransition } from "vue2-transitions";
 import Multiselect from "vue-multiselect";
+import Swal from "sweetalert2";
 import {
   SpinalGraph,
   SpinalGraphService,
@@ -339,7 +288,6 @@ export default {
       contexteRequired: [],
       addScene: [],
       digitalGraph: SpinalGraph,
-      digitalContextListComputed: [],
       sState: "",
       enable: false,
       row: null,
@@ -353,6 +301,14 @@ export default {
           field: "",
         },*/
       ],
+       columns2: [
+        {
+          label: "Context",
+          field: "name",
+        },
+      ],
+      contextList: [],
+      sendRequiredCont: []
     };
   },
   computed: {
@@ -381,14 +337,15 @@ export default {
         ? this.searchedData.length
         : this.profiles.length;
     },
-    /*digitalContextListComputed() {
+    digitalContextListComputed() {
       return this.digitalContextList.map((res) => {
         return {
           id: res.info.id?.get(),
           name: res.info.name?.get() ?? "no name",
+          type: res.info.type?.get()
         };
       });
-    },*/
+    },
   },
   mounted: function () {
     if (this.auto == "true" || this.auto == 1) {
@@ -406,16 +363,97 @@ export default {
     }
     if (url) {
       this.digitalGraph = await spinalIO.load(url);
-      this.list = await this.digitalGraph.getChildren();
+      console.log(this.digitalGraph)
       this.profileContext = SpinalGraphService.getContext(
         USER_PROFILE_LIST_CONTEXT
       );
 
+      this.list = await this.digitalGraph.getChildren();
+      for (i; i < this.list.length; i++) {
+        this.digitalContextList.push(this.list[i]);
+      }
+       let cont = this.digitalContextList.filter((elt) => {
+          if (elt.info.type?.get() != "SpinalService" &&
+          elt.info.type?.get() != "geographicContext" &&
+          elt.info.type?.get() != "SpinalContext" ) {
+            return elt;
+          }
+       });
+       this.digitalContextList = cont;
+      await this.getContextDigitalTwin();
       await this.getApp();
+      // await this.createProfileDefault(this.list, this.appList)
       await this.getUserProfile();
     }
   },
   methods: {
+    /*async createProfileDefault(contextList, appList) {
+      let profile1 = {
+          id: null,
+          name: "BOS Admin",
+          appList: [],
+          buildContextList: []
+        
+      }
+      let profile2 = {
+          id: null,
+          name: "BOS Integrator",
+          appList: [],
+          buildContextList: []
+        
+      }
+      let profile3 = {
+          id: null,
+          name: "Workplace Manager",
+          appList: [],
+          buildContextList: []
+        
+      }
+      let profile4 = {
+          id: null,
+          name: "Facility Manager",
+          appList: [],
+          buildContextList: []
+        
+      }
+      let profile5 = {
+          id: null,
+          name: "Custom user",
+          appList: [],
+          buildContextList: []
+        
+      }
+      let cont = [];
+      contextList.map((elt) => {
+        if (elt.info.type?.get() === "SpinalService" ||
+          elt.info.type?.get() === "geographicContext" ||
+          elt.info.type?.get() === "SpinalContext") {
+            let data = {
+              id: elt.info.id?.get(),
+              name: elt.info.name?.get() ?? "no name",
+              type: elt.info.type?.get(),
+            };
+            profile1.buildContextList.push(data);
+            profile2.buildContextList.push(data);
+            profile3.buildContextList.push(data);
+            profile4.buildContextList.push(data);
+            profile5.buildContextList.push(data);
+          }
+      });
+
+      appList.map((elt) => {
+        console.log(elt)
+        if (elt.name === 'Description') {
+            profile1.appList.push(elt);
+            profile2.appList.push(elt);
+            profile3.appList.push(elt);
+            profile4.appList.push(elt);
+            profile5.appList.push(elt);
+        }
+      })
+
+      console.log(profile1, profile2, profile3, profile4, profile5);
+    },*/
     customSort(value) {
       return value.sort((a, b) => {
         const sortBy = this.currentSort;
@@ -431,34 +469,8 @@ export default {
     setCheckedGeneralContext(ind) {
       this.addScene.push(ind);
     },
-    onRowClick(params) {
-      console.log(params);
-      if (params.selected === false) {
-        this.enable = false;
-        let data = this.listUpdate.filter(function (f) {
-          console.log(f);
-          return f.type !== params.row.typeContext[0];
-        });
-        this.listUpdate = data;
-
-        let newAr = this.profileData.buildContextList.filter(function (f) {
-          return f.type !== params.row.typeContext[0];
-        });
-        console.log(newAr);
-        this.profileData.buildContextList = newAr;
-
-        console.log(this.listUpdate);
-        console.log(this.digitalContextListComputed);
-        console.log(this.profileData.buildContextList);
-      } else {
-        this.enable = true;
-        this.row = params.row;
-        this.loadContext(params.row);
-      }
-    },
 
     selectApp(params) {
-      console.log(params);
       this.selectedApps = [];
       this.profileData.appList = [];
       if (!this.selectAllApps) {
@@ -474,94 +486,135 @@ export default {
           this.selectedApps.push(res);
         }
         this.profileData.appList = this.selectedApps;
-        console.log(this.digitalContextListComputed);
       }
     },
-
-    loadContext(app) {
-      this.digitalContextListComputed = [];
-      let digitalContextList = [];
-      let lists = this.list;
-      lists.forEach((item) => {
-        app.typeContext.forEach((element) => {
-          if (item.info.type.get() === element) {
-            if (digitalContextList.length === 0) {
-              digitalContextList.push(item);
-            } else {
-              console.log("here");
-              digitalContextList.filter(function (elem) {
-                if (elem.info.name.get() != item.info.name.get()) {
-                  digitalContextList.push(item);
-                }
-              });
-            }
-          }
-        });
-      });
-
-      console.log(digitalContextList);
-      this.digitalContextListComputed = digitalContextList.map((res) => {
-        return {
-          id: res.info.id?.get(),
-          name: res.info.name?.get() ?? "no name",
-          type: res.info.type?.get(),
-        };
-      });
-      console.log(this.digitalContextListComputed);
-    },
-    select() {
+     select(params) {
+      console.log(params)
+      this.sendRequiredCont = [];
       this.selected = [];
-      this.profiles.buildContextList = [];
-      console.log(this.selected);
+      this.profileData.buildContextList = [];
       if (!this.selectAll) {
         let contx;
-        for (let i in this.digitalContextListComputed) {
+        for (let i in params.selectedRows) {
           contx = {
-            id: this.digitalContextListComputed[i].id,
-            data: this.digitalContextListComputed[i].name,
+            id: params.selectedRows[i].id,
+            name: params.selectedRows[i].name,
+            type: params.selectedRows[i].type,
+            originalIndex: params.selectedRows[i].originalIndex,
+            vgtSelected: params.selectedRows[i].vgtSelected,
+            vgt_id: params.selectedRows[i].vgt_id,
           };
           this.selected.push(contx);
         }
-        this.profiles.buildContextList = contx;
+        this.profileData.buildContextList = this.selected;
+        if (params.selectedRows.length <= 0) {
+          if (this.profileData.buildContextList.length <= 0) {
+             this.sendRequiredCont = this.addScene;
+          } else {
+             if (this.sState == 'edit') {
+                this.sendRequiredCont = [];
+              }
+          }
+        } else {
+          console.log(this.addScene);
+            this.sendRequiredCont = this.addScene;
+        }
+            console.log(this.sendRequiredCont)
       }
     },
+
+    async getContextDigitalTwin() {
+      this.contextList = [];
+      let rep = {};
+      if (this.sState === "edit") {
+        this.digitalContextListComputed.map((node) => {
+          this.profileData.buildContextList.map((el) => {
+                  if (el.name === node.name) {
+                    rep = {
+                      id: node.id,
+                      name: node.name,
+                      type: node.type,
+                      originalIndex: el.originalIndex,
+                      vgtSelected: el.vgtSelected,
+                      vgt_id: el.vgt_id,
+                    };
+                  }
+                  if (el.name != node.name) {
+                          rep = {
+                            id: node.id,
+                            name: node.name,
+                            type: node.type
+                          };
+                  }
+
+                  if (rep != undefined) {
+                    let found = false;
+                      for(let i = 0; i < this.contextList.length; i++) {
+                          if (this.contextList[i].name === rep.name) {
+                             if (rep.originalIndex) {
+                              this.contextList[i] = rep;
+                             }
+                              found = true;
+                              break;
+                          }
+                      }
+                    if (found == false) {
+                      this.contextList.push(rep);
+                    }
+                  }
+                })
+        });
+      } else {
+        this.contextList = this.digitalContextListComputed;
+      }
+    },
+
     async displayAdd(menu = "", item = null) {
       this.display = true;
       this.sState = menu;
+      this.addScene = [];
+      this.sendRequiredCont = [];
 
       this.contexteRequired = this.list.filter((elt) => {
         if (
           elt.info.type.get() === "SpinalService" ||
-          elt.info.type.get() === "geographicContext"
+          elt.info.type.get() === "geographicContext" ||
+          elt.info.type.get() === "SpinalContext"
         ) {
           return elt;
         }
       });
       if (this.sState == "edit" && item != null) {
+        this.sendRequiredCont = [];
         this.profileData = item;
-        console.log(this.profileData.buildContextList);
-        this.listUpdate = this.profileData.buildContextList;
-        let newAr = this.listUpdate.filter((elt) => {
-          console.log(elt.name);
-          return elt.name != "Scenes" && elt.name != "spatial";
-        });
-        this.listUpdate = newAr;
-        console.log(this.listUpdate);
-        /*let newAr = [];
-        this.listUpdate.filter((elt) => {
-          this.contexteRequired.forEach((element) => {
-            if (element.info.name?.get() != elt.name) {
-              newAr.push(elt);
-            }
-          });
-        });*/
-        console.log(newAr);
+        console.log(this.profileData);
+        await this.getContextDigitalTwin();
         await this.getApp();
       }
       if (this.sState == "detail" && item != null) {
         this.profileData = item;
       }
+      if  (this.sState == "delete" && item != null) {
+        Swal.fire({
+        title: 'Supprimer ce profil?',
+        showDenyButton: true,
+        confirmButtonText: 'Valider',
+        denyButtonText: `Annuler`,
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          await SpinalGraphService.removeFromGraph(item.id);
+          Swal.fire('Supprimé!', '', 'success')
+          this.profiles = [];
+          await this.getUserProfile();
+          await this.getContextDigitalTwin();
+          await this.getApp()
+        }
+      });
+          this.sState = "";
+          this.display = false;
+      }
       if (this.sState == "add") {
+        this.sendRequiredCont = this.addScene;
         this.profileData = {
           name: null,
           appList: [],
@@ -570,11 +623,11 @@ export default {
       }
     },
     async getUserProfile() {
+      this.sendRequiredCont = [];
       const prof = await SpinalGraphService.getChildrenInContext(
         this.profileContext.info.id.get(),
         this.profileContext.info.id.get()
       );
-      console.log(prof);
       if (prof.length > 0) {
         prof.map((res) => {
           let data = {
@@ -584,7 +637,7 @@ export default {
             buildContextList: null,
           };
           data.id = res.id.get();
-          data.name = res.name.get();
+          data.name = res.name?.get();
           if (res.appList.get()) {
             data.appList = res.appList.get().map((el) => {
               return {
@@ -602,13 +655,16 @@ export default {
                 id: el.id,
                 name: el.name,
                 type: el.type,
+                originalIndex: el.originalIndex,
+                vgtSelected: el.vgtSelected,
+                vgt_id: el.vgt_id,
               };
             });
           }
           this.profiles.push(data);
         });
       }
-      console.log(this.profiles);
+      console.log(this.profiles)
     },
     async getApp() {
       this.appList = [];
@@ -621,118 +677,149 @@ export default {
       );
       if (apps.length > 0) {
         apps.map((res) => {
-          let data = {
-            name: null,
-            children: [],
-          };
-          data.name = res.name.get();
           res.childrenIds.map(async (elt) => {
             const node = await SpinalGraphService.getNodeAsync(elt);
             let rep;
-            if (this.sState == "edit") {
-              this.profileData.appList.map((el) => {
-                if (el.name === node.name.get()) {
-                  rep = {
-                    id: node.id.get(),
-                    name: node.name.get(),
-                    typeContext: node.typeContext.get(),
-                    originalIndex: el.originalIndex,
-                    vgtSelected: el.vgtSelected,
-                    vgt_id: el.vgt_id,
-                  };
-                } else if (el.name != node.name.get() && !el.originalIndex) {
-                  rep = {
-                    id: node.id.get(),
-                    name: node.name.get(),
-                    typeContext:
-                      node.typeContext != undefined
-                        ? node.typeContext.get()
-                        : null,
-                  };
-                }
-              });
+            if (this.sState === "edit") {
+              if (this.profileData.appList.length > 0) {
+                this.profileData.appList.map((el) => {
+                  if (el.name === node.name?.get()) {
+                    console.log("coché", el)
+                    rep = {
+                      id: node.id?.get(),
+                      name: node.name?.get(),
+                      typeContext: node.typeContext?.get(),
+                      originalIndex: el.originalIndex,
+                      vgtSelected: el.vgtSelected,
+                      vgt_id: el.vgt_id,
+                    };
+                    this.appList.push(rep);
+                  } 
+                  if (el.name != node.name?.get()) {
+                    rep = {
+                      id: node.id.get(),
+                      name: node.name.get(),
+                      typeContext:  node.typeContext?.get(),
+                    };
+                  }
+                });
+              } else {
+                rep = {
+                  id: node.id.get(),
+                  name: node.name.get(),
+                  typeContext: node.typeContext?.get()
+              }
+            }
             } else {
-              rep = {
-                id: node.id.get(),
-                name: node.name.get(),
-                typeContext:
-                  node.typeContext != undefined ? node.typeContext.get() : null,
-              };
+                rep = {
+                  id: node.id.get(),
+                  name: node.name.get(),
+                  typeContext: node.typeContext?.get()
+              }
             }
-            if (rep != undefined) {
-              data.children.push(rep);
-            }
+
+              if (rep != undefined) {
+                let found = false;
+                        for(let i = 0; i < this.appList.length; i++) {
+                            if (this.appList[i].name === rep.name) {
+                              if (rep.originalIndex) {
+                                this.appList[i] = rep;
+                              }
+                                found = true;
+                                break;
+                            }
+                        }
+                      if (found == false) {
+                        this.appList.push(rep);
+                      }
+              }
           });
-          this.appList.push(data);
         });
       }
-
       console.log(this.appList);
     },
-    computedApplList(data) {
-      return Promise.all(
-        data.map(async (el) => {
-          const child = await SpinalGraphService.getChildren(el.id.get());
-          const ap = child.map((res) => {
-            return {
-              name: res.name._data,
-              id: res.id._data,
-            };
-          });
-          return {
-            nameGroup: el.name.get(),
-            idGroup: el.id.get(),
-            apps: ap,
-          };
-        })
-      );
-    },
     async saveProfile() {
-      this.profiles = [];
-      if (!this.profileData.id) {
-        this.addScene.forEach((element) => {
-          let scene = {
-            id: element.info.id?.get(),
-            name: element.info.name?.get() ?? "no name",
-            type: element.info.type?.get(),
-          };
-          this.profileData.buildContextList.push(scene);
-        });
-      }
       console.log(this.profileData);
-      const graphContext = new SpinalGraph("GraphContext");
-      if (this.profileData.buildContextList.length > 0) {
-        this.profileData.buildContextList.forEach(async (element) => {
-          console.log(element);
-          const contxNode = await this.digitalGraph.getContext(element.name);
-          console.log("node", contxNode);
-          graphContext.addContext(contxNode);
-        });
-      }
-      if (this.profileData.appList.length > 0) {
-        graphContext.info.add_attr("appsList", this.profileData.appList);
-      }
-      if (this.profileData.id) {
-        const res = SpinalTwinServiceUserProfile.updateUserProfile(
-          this.profileData,
-          this.profileData.id,
-          graphContext
-        );
-        console.log(res);
+      console.log(this.sendRequiredCont);
+      this.profiles = [];
+      if (this.profileData.name) {
+        if (this.sendRequiredCont.length > 0) {
+          this.sendRequiredCont.forEach((element) => {
+              let scene = {
+                id: element.info.id?.get(),
+                name: element.info.name?.get() ?? "no name",
+                type: element.info.type?.get(),
+              };
+              this.profileData.buildContextList.push(scene);
+            });
+        }
+        const graphContext = new SpinalGraph("GraphContext");
+        if (this.profileData.buildContextList.length > 0) {
+          this.profileData.buildContextList.forEach(async (element) => {
+            const contxNode = await this.digitalGraph.getContext(element.name);
+            graphContext.addContext(contxNode);
+          });
+        }
+        if (this.profileData.appList.length > 0) {
+          graphContext.info.add_attr("appsList", this.profileData.appList);
+        }
+        if (this.profileData.id) {
+          const res = SpinalTwinServiceUserProfile.updateUserProfile(
+            this.profileData,
+            this.profileData.id,
+            graphContext
+          );
+          Swal.fire({
+                  title: "Beau travail",
+                  text: "Le profil d'utilisateur a bien été modifié",
+                  type: "success",
+                  confirmButtonClass: "md-button md-primary",
+                  buttonsStyling: false
+                });
+        } else {
+          await SpinalTwinServiceUserProfile.createUserProfile(
+            this.profileData,
+            graphContext
+          );
+          Swal.fire({
+                  title: "Beau travail",
+                  text: "Le profil d'utilisateur a bien été enregistré",
+                  type: "success",
+                  confirmButtonClass: "md-button md-primary",
+                  buttonsStyling: false
+                });
+        }
+        this.display = false;
+        this.sState = null;
+        this.addScene = [];
+        await this.getUserProfile();
+        await this.getContextDigitalTwin();
+        await this.getApp()
+        this.profileData = null;
+        this.enable = false;
       } else {
-        await SpinalTwinServiceUserProfile.createUserProfile(
-          this.profileData,
-          graphContext
-        );
+         Swal.fire({
+                  title: "Champs manquants",
+                  text: "Veuillez renseigner tous les champs",
+                  type: "error",
+                  confirmButtonClass: "md-button md-danger",
+                  buttonsStyling: false
+                });
       }
-      this.display = false;
-      this.sState = null;
-      this.getUserProfile();
     },
-    cancelAdd() {
+    async cancelAdd() {
       this.display = false;
       this.sState = "";
       this.config = "";
+      this.profileData = null;
+      this.enable = false;
+      this.contextList = [];
+      this.appList = [];
+      this.profiles = [];
+      this.addScene = [];
+      await this.getUserProfile();
+      await this.getContextDigitalTwin();
+      await this.getApp()
     },
     handleImage(e) {
       const selectedImage = e.target.files[0];
@@ -745,7 +832,7 @@ export default {
       });
       reader.readAsDataURL(fileObject);
     },
-  },
+
   mounted() {
     // Fuse search initialization.
     this.fuseSearch = new Fuse(this.profiles, {
@@ -767,6 +854,7 @@ export default {
       this.searchedData = result;
     },
   },
+}
 };
 </script>
 <style lang="css" scoped>

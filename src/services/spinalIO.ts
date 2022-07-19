@@ -149,7 +149,7 @@ class SpinalIO {
       const path = this.getModelPath();
       return this.load(path);
     } catch (e) {
-      return this.load('/__users__/admin/Digital twin');
+      return this.load(localStorage.getItem("digitalGraphURL"));
     }
   }
 

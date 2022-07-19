@@ -41,31 +41,18 @@
           <h4 class="title">Register Bos Config to Admin App</h4>
         </md-card-header>
         <md-card-content>
-          <ValidationObserver ref="form">
+          <div ref="form">
             <form @submit.prevent="validate">
               <div>
                 <div class="md-layout">
                   <div class="md-layout-item md-size-60 mt-4 md-small-size-100">
-                    <ValidationProvider name="name" v-slot="{ passed, failed }">
                       <md-field
-                        :class="[
-                          { 'md-error': failed },
-                          { 'md-valid': passed },
-                          { 'md-form-group': true },
-                        ]"
                       >
                         <label>Nom</label>
                         <md-input type="text" v-model="registerAdminData.name">
                         </md-input>
                       </md-field>
-                    </ValidationProvider>
-                    <ValidationProvider name="url" v-slot="{ passed, failed }">
                       <md-field
-                        :class="[
-                          { 'md-error': failed },
-                          { 'md-valid': passed },
-                          { 'md-form-group': true },
-                        ]"
                       >
                         <label>URL d'administration</label>
                         <md-input
@@ -74,14 +61,7 @@
                         >
                         </md-input>
                       </md-field>
-                    </ValidationProvider>
-                    <ValidationProvider name="key" v-slot="{ passed, failed }">
                       <md-field
-                        :class="[
-                          { 'md-error': failed },
-                          { 'md-valid': passed },
-                          { 'md-form-group': true },
-                        ]"
                       >
                         <label>Clé d'enregistrement</label>
                         <md-input
@@ -90,7 +70,6 @@
                         >
                         </md-input>
                       </md-field>
-                    </ValidationProvider>
                   </div>
                 </div>
               </div>
@@ -104,7 +83,7 @@
                 </div>
               </md-card-actions>
             </form>
-          </ValidationObserver>
+          </div>
         </md-card-content>
       </md-card>
       <md-card v-else>
@@ -209,19 +188,18 @@ import { SpinalGraphService } from "spinal-env-viewer-graph-service";
 import { SpinalTwinServiceRole } from "spinal-service-spinaltwin-admin";
 import { spinalIO } from "../../../services/spinalIO";
 import Multiselect from "vue-multiselect";
-import VuePassword from "vue-password";
 import {
   CREDENTIAL_ADMIN_TO_BOS,
   CREDENTIAL_BOS_TO_ADMIN,
   REGISTER_ADMIN,
+  URL_BOS_CONFIG,
   SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST,
 } from "../../../constant";
 import axios from "axios";
-// import { SlideYDownTransition } from "vue2-transitions";
-// import Places from 'vue-places'
+import Swal from "sweetalert2";
 export default {
   name: "Roles",
-  components: { Pagination, Multiselect, VuePassword },
+  components: { Pagination, Multiselect },
   props: {
     type: {
       type: String,
@@ -282,13 +260,10 @@ export default {
       await SpinalGraphService.setGraph(graph);
     }
     if (url) {
-      console.log(url);
       this.getInfoRegisterBos();
       let verifRegister = SpinalGraphService.getContext(REGISTER_ADMIN);
-      console.log(verifRegister);
       if (verifRegister) {
         this.verifRegister = verifRegister.info.isRegister.get();
-        console.log(this.verifRegister);
       }
     }
   },
@@ -304,17 +279,15 @@ export default {
     },
 
     registerBos() {
-      console.log(this.registerAdminData);
       if (
         this.registerAdminData.name &&
         this.registerAdminData.urlAdmin &&
         this.registerAdminData.registerKey
       ) {
         axios
-          .post(`/registerBosToAdmin`, this.registerAdminData)
+          .post(`${URL_BOS_CONFIG}/registerBosToAdmin`, this.registerAdminData)
           .then((res) => {
             if (res) {
-              console.log(res);
               this.verifRegister = true;
               this.sendDataToAdmin("first");
               this.getInfoRegisterBos();
@@ -331,28 +304,43 @@ export default {
         CREDENTIAL_ADMIN_TO_BOS
       );
 
-      this.tokenAdmin = credentialAdmin.info.tokenAdminBos.get();
-      this.urlAdmin = credentialBos.info.urlAdmin.get();
-      this.bosName = credentialBos.info.bosName.get();
+      this.tokenAdmin = credentialAdmin.info.tokenAdminBos?.get();
+      this.urlAdmin = credentialBos.info.urlAdmin?.get();
+      this.bosName = credentialBos.info.bosName?.get();
     },
 
     sendDataToAdmin(step) {
       if (step === "first") {
         this.generate(25, "id");
-        console.log(this.credential);
         if (this.credential.clientId) {
-          axios.put(`/sendDataToAdmin`, this.credential).then((res) => {
-            console.log(res);
-            if (res) {
-              console.log(res);
+          axios.put(`${URL_BOS_CONFIG}/sendDataToAdmin`, this.credential).then((res) => {
+            if (res.status === 200) {
+              this.verifRegister = true;
+              Swal.fire({
+                  title: "Beau travail",
+                  text: "Votre BOS a bien été enregistré",
+                  type: "success",
+                  confirmButtonClass: "md-button md-primary",
+                  buttonsStyling: false
+                });
             }
           });
         }
       }
       if (step === "other") {
-        axios.put(`/otherSendData`).then((res) => {
+        console.log("here")
+        axios.put(`${URL_BOS_CONFIG}/otherSendData`).then((res) => {
           if (res) {
             console.log(res);
+            if (res.status === 200) {
+              Swal.fire({
+                  title: "Beau travail",
+                  text: "Les profils ont été mis à jour avec succès",
+                  type: "success",
+                  confirmButtonClass: "md-button md-primary",
+                  buttonsStyling: false
+                });
+            }
           }
         });
       }
@@ -383,7 +371,6 @@ export default {
           Math.floor(Math.random() * CharacterSet.length)
         );
       }
-      console.log(password);
       if (input === "id") {
         this.credential.clientId = password;
       } else {
