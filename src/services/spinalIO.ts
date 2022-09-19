@@ -51,7 +51,7 @@ class SpinalIO {
     this.user = null;
     this.conn = null;
   }
-  decriJson(encryptedHex) {
+  decriJson(encryptedHex: any) {
     try {
       const k = [
         10,
@@ -151,6 +151,13 @@ class SpinalIO {
     } catch (e) {
       return this.load(localStorage.getItem("digitalGraphURL"));
     }
+  }
+
+  async sharedModel(server_id: number, flag: number, name: string) {
+    await this.connect();
+    spinalCore.share_model(
+                        this.conn, server_id, "BOS", flag, name
+                    );
   }
 
   async load(path: string): Promise<spinal.Model> {

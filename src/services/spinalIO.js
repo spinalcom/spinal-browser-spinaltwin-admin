@@ -159,6 +159,12 @@ class SpinalIO {
             return this.load(localStorage.getItem("digitalGraphURL"));
         }
     }
+    sharedModel(server_id, flag, name) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.connect();
+            spinal_core_connectorjs_type_1.spinalCore.share_model(this.conn, server_id, "BOS", flag, name);
+        });
+    }
     load(path) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.connect();

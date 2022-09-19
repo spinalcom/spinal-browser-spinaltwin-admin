@@ -37,12 +37,9 @@
               <div>
                 <div class="md-layout">
                   <div class="md-layout-item md-size-60 mt-4 md-small-size-100">
-                    
-                      <md-field
-                      >
-                        <md-input @change="readFile" type="file"> </md-input>
-
-                      </md-field>
+                    <md-field>
+                      <md-input @change="readFile" type="file"> </md-input>
+                    </md-field>
                   </div>
                   <div
                     class="md-layout-item md-size-70 mt-4 md-small-size-100"
@@ -292,7 +289,7 @@ export default {
           name: key,
           children: groups[key],
         };
-        console.log(data)
+        console.log(data);
         this.tagsList.push(data);
       }
     },
@@ -311,12 +308,10 @@ export default {
       }
       if (this.tagsList) {
         this.tagsList.forEach(async (element) => {
+          console.log("tesstttttt", element);
           if (element.name) {
             let grpName = { name: element.name };
-            let group = SpinalGraphService.createNode(
-              grpName,
-              SpinalGraphService.getGraph()
-            );
+            let group = SpinalGraphService.createNode(grpName, undefined);
             await SpinalGraphService.addChildInContext(
               this.apiContext.info.id.get(),
               group,
@@ -326,10 +321,7 @@ export default {
             );
             if (element.children.length > 0) {
               element.children.map(async (resp) => {
-                let api = SpinalGraphService.createNode(
-                  resp,
-                  SpinalGraphService.getGraph()
-                );
+                let api = SpinalGraphService.createNode(resp, undefined);
                 await SpinalGraphService.addChildInContext(
                   group,
                   api,
@@ -347,7 +339,7 @@ export default {
         text: "Les routes d'API ont été enregistré avec succès",
         type: "success",
         confirmButtonClass: "md-button md-primary",
-        buttonsStyling: false
+        buttonsStyling: false,
       });
       await this.getApis();
       this.display = false;

@@ -38,7 +38,6 @@ const vue_material_1 = __importDefault(require("vue-material"));
 require("vue-material/dist/vue-material.min.css");
 require("vue-material/dist/theme/default.css");
 const vue_ripple_directive_1 = __importDefault(require("vue-ripple-directive"));
-const vue_apexcharts_1 = __importDefault(require("vue-apexcharts"));
 const vue_router_1 = __importDefault(require("vue-router"));
 const material_dashboard_1 = __importDefault(require("./material-dashboard"));
 // Plugins
@@ -63,8 +62,6 @@ vue_1.default.prototype.$Chartist = chartist_1.default;
 // plugin setup
 vue_1.default.use(vue_router_1.default);
 vue_1.default.use(material_dashboard_1.default);
-vue_1.default.use(vue_apexcharts_1.default);
-vue_1.default.component('apexchart', vue_apexcharts_1.default);
 vue_ripple_directive_1.default.zIndex = 99999999;
 vue_1.default.directive('ripple', vue_ripple_directive_1.default);
 vue_1.default.use(v_tooltip_1.default);

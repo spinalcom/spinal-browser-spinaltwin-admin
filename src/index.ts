@@ -36,7 +36,6 @@ import 'vue-material/dist/theme/default.css';
 
 import Ripple from 'vue-ripple-directive';
 
-import VueApexCharts from 'vue-apexcharts';
 import VueRouter from 'vue-router';
 import DashboardPlugin from './material-dashboard';
 
@@ -64,9 +63,6 @@ Vue.prototype.$Chartist = Chartist;
 // plugin setup
 Vue.use(VueRouter);
 Vue.use(DashboardPlugin);
-Vue.use(VueApexCharts);
-
-Vue.component('apexchart', VueApexCharts);
 
 Ripple.zIndex = 99999999;
 Vue.directive('ripple', Ripple);

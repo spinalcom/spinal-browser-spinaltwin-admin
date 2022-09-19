@@ -174,7 +174,7 @@ export default {
             } else if (localStorage.getItem("nameDigitalTwinCurrent")){
               this.nameDigitalTwin = localStorage.getItem("nameDigitalTwinCurrent");
               this.changeDGT = false;
-              await this.createUserHub();
+              // await this.createUserHub();
             }
           })
           .catch((e) => {
@@ -190,7 +190,7 @@ export default {
       this.nameDigitalTwin = localStorage.getItem("nameDigitalTwinCurrent");
       localStorage.setItem("digitalGraphURL", this.value.url);
       this.changeDGT = false;
-      await this.createUserHub();
+      // await this.createUserHub();
 
     },
     displayAdd() {
@@ -212,16 +212,12 @@ export default {
 
       let graph = await spinalIO.load(localStorage.getItem("digitalGraphURL"));
 
-      let adminUser = {name: "Super User", password: ""};
+      let adminUser = {name: "SpinalAdmin", password: ""};
       let integrateurUser = {name: "Integrateur", password: ""};
-      let assetManUser = {name: "Asset Manager", password: ""};
-      let mainteneurUser = {name: "Mainteneur", password: ""};
-      let basicUser = {name: "Simple User", password: ""};
+      let basicUser = {name: "Basic User", password: ""};
       let userArray = [
         adminUser,
         integrateurUser,
-        assetManUser,
-        mainteneurUser,
         basicUser
       ]
       
@@ -250,34 +246,24 @@ export default {
             SpinalUserManager.new_account(
                   URL_BOS_CONFIG, element.name, element.password
                 );
-                if (element.name === "Super User") {
-                  spinalCore.share_model(
-                        graph._server_id, "Immersion", flag_WriteRead, element.name
-                    );
+                if (element.name === "SpinalAdmin") {
+                  spinalIO.sharedModel(graph._server_id, flag_WriteRead, element.name)
                 }
                 if (element.name === "Integrateur") {
-                  spinalCore.share_model(
-                        graph._server_id, "Immersion", flag_WriteRead, element.name
+                  spinalIO.share_model(
+                        graph._server_id, flag_WriteRead, element.name
                     );
                 }
-                if (element.name === "Asset Manager") {
-                  spinalCore.share_model(
-                        graph._server_id, "Immersion", flag_WriteRead, element.name
-                    );
-                }
-                if (element.name === "Mainteneur") {
-                  spinalCore.share_model(
-                        graph._server_id, "Immersion", flag_WriteRead, element.name
-                    );
-                }
-                if (element.name === "Simple User") {
-                  spinalCore.share_model(
-                        graph._server_id, "Immersion", flag_WriteRead, element.name
+                if (element.name === "Basic Utilisateur") {
+                  spinalIO.share_model(
+                        graph._server_id, flag_WriteRead, element.name
                     );
                 }
               }
           });
       });
+
+      console.log(await spinalIO.load("/etc/UserProfileDir"));
 
     },
     saveDigitalTwin() {

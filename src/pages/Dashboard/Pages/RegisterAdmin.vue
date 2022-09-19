@@ -293,6 +293,14 @@ export default {
               this.getInfoRegisterBos();
             }
           });
+      } else {
+        Swal.fire({
+                          title: "Champs manquants",
+                          text: "Veuillez renseigner tous les champs",
+                          type: "error",
+                          confirmButtonClass: "md-button md-danger",
+                          buttonsStyling: false
+                        });
       }
     },
 
