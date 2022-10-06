@@ -268,7 +268,18 @@ export default {
     },
     saveDigitalTwin() {
       if (this.digitalTwinData.name && this.digitalTwinData.url) {
-        const nodeId = SpinalGraphService.createNode(
+        axios.post(`${URL_BOS_CONFIG}/saveDigitalTwin`, this.digitalTwinData).then((res) => {
+              console.log(res);
+            if (res.status === 200) {
+              this.getDigitalTwin();
+              this.display = false;
+            }
+          }).catch((e) => {
+            console.error(e);
+            return Promise.reject(Error("Internal Server Error"));
+          });
+
+        /*const nodeId = SpinalGraphService.createNode(
           this.digitalTwinData,
           undefined
         );
@@ -289,7 +300,7 @@ export default {
             return Promise.reject(Error("Internal Server Error"));
           });
         
-        return result;
+        return result;*/
       }
     },
   },
