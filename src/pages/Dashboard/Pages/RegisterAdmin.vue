@@ -1,14 +1,37 @@
+<!--
+Copyright 2022 SpinalCom - www.spinalcom.com
+
+This file is part of SpinalCore.
+
+Please read all of the following terms and conditions
+of the Free Software license Agreement ("Agreement")
+carefully.
+
+This Agreement is a legally binding contract between
+the Licensee (as defined below) and SpinalCom that
+sets forth the terms and conditions that govern your
+use of the Program. By installing and/or using the
+Program, you agree to abide by all the terms and
+conditions stated or referenced herein.
+
+If you do not agree to abide by these terms and
+conditions, do not demonstrate your acceptance and do
+not install or use the Program.
+You should have received a copy of the license along
+with this file. If not, see
+<http://resources.spinalcom.com/licenses.pdf>.
+-->
+
 <template>
   <div class="md-layout">
     <div class="md-layout-item md-size-60 mt-4 md-small-size-100">
-      <md-card
-        v-if="verifRegister === true"
-        class="md-card-primary"
-        style="background-color: rgb(71, 101, 129) !important"
-      >
+      <md-card v-if="verifRegister"
+               class="md-card-primary"
+               style="background-color: rgb(71, 101, 129) !important">
         <md-card-content>
           <div style="text-align: center">
-            <h3 class="text-white" style="font-weight: bold">
+            <h3 class="text-white"
+                style="font-weight: bold">
               La plateforme BOS config est déja enregistré sur la plateforme
               d'Administration
             </h3>
@@ -25,7 +48,8 @@
             </h5>
             <h5 class="text-white">
               Token de la plateforme d'administration :
-              <span class="text-success" v-if="tokenAdmin.length > 8">{{
+              <span class="text-success"
+                    v-if="tokenAdmin.length > 8">{{
                 tokenAdmin.substring(0, 8) + "..."
               }}</span>
             </h5>
@@ -33,7 +57,7 @@
         </md-card-content>
       </md-card>
       <br />
-      <md-card v-if="verifRegister === false">
+      <md-card v-if="!verifRegister">
         <md-card-header class="md-card-header-icon md-card-header-primary">
           <div class="card-icon">
             <md-icon>autorenew</md-icon>
@@ -46,30 +70,24 @@
               <div>
                 <div class="md-layout">
                   <div class="md-layout-item md-size-60 mt-4 md-small-size-100">
-                      <md-field
-                      >
-                        <label>Nom</label>
-                        <md-input type="text" v-model="registerAdminData.name">
-                        </md-input>
-                      </md-field>
-                      <md-field
-                      >
-                        <label>URL d'administration</label>
-                        <md-input
-                          type="text"
-                          v-model="registerAdminData.urlAdmin"
-                        >
-                        </md-input>
-                      </md-field>
-                      <md-field
-                      >
-                        <label>Clé d'enregistrement</label>
-                        <md-input
-                          type="password"
-                          v-model="registerAdminData.registerKey"
-                        >
-                        </md-input>
-                      </md-field>
+                    <md-field>
+                      <label>Nom</label>
+                      <md-input type="text"
+                                v-model="registerAdminData.name">
+                      </md-input>
+                    </md-field>
+                    <md-field>
+                      <label>URL d'administration</label>
+                      <md-input type="text"
+                                v-model="registerAdminData.urlAdmin">
+                      </md-input>
+                    </md-field>
+                    <md-field>
+                      <label>Clé d'enregistrement</label>
+                      <md-input type="password"
+                                v-model="registerAdminData.registerKey">
+                      </md-input>
+                    </md-field>
                   </div>
                 </div>
               </div>
@@ -77,7 +95,8 @@
               <md-card-actions>
                 <div>
                   <md-button class="btn-next md-danger"> Annuler </md-button>
-                  <md-button class="btn-next md-primary" @click="registerBos">
+                  <md-button class="btn-next md-primary"
+                             @click="registerBos">
                     Enregistrer
                   </md-button>
                 </div>
@@ -103,10 +122,8 @@
           </h4>
           <br />
           <div style="text-align: center">
-            <md-button
-              class="btn-next md-primary"
-              @click="sendDataToAdmin('other')"
-            >
+            <md-button class="btn-next md-primary"
+                       @click="sendDataToAdmin('other')">
               Envoyer
             </md-button>
           </div>
@@ -262,8 +279,9 @@ export default {
     if (url) {
       this.getInfoRegisterBos();
       let verifRegister = SpinalGraphService.getContext(REGISTER_ADMIN);
+
       if (verifRegister) {
-        this.verifRegister = verifRegister.info.isRegister.get();
+        this.verifRegister = verifRegister.info?.isRegister?.get() || false;
       }
     }
   },
@@ -286,21 +304,21 @@ export default {
       ) {
         axios
           .post(`${URL_BOS_CONFIG}/registerBosToAdmin`, this.registerAdminData)
-          .then((res) => {
+          .then(async (res) => {
             if (res) {
-              this.verifRegister = true;
-              this.sendDataToAdmin("first");
+              await this.sendDataToAdmin("first");
               this.getInfoRegisterBos();
+              this.verifRegister = true;
             }
           });
       } else {
         Swal.fire({
-                          title: "Champs manquants",
-                          text: "Veuillez renseigner tous les champs",
-                          type: "error",
-                          confirmButtonClass: "md-button md-danger",
-                          buttonsStyling: false
-                        });
+          title: "Champs manquants",
+          text: "Veuillez renseigner tous les champs",
+          type: "error",
+          confirmButtonClass: "md-button md-danger",
+          buttonsStyling: false,
+        });
       }
     },
 
@@ -317,37 +335,39 @@ export default {
       this.bosName = credentialBos.info.bosName?.get();
     },
 
-    sendDataToAdmin(step) {
+    async sendDataToAdmin(step) {
       if (step === "first") {
         this.generate(25, "id");
         if (this.credential.clientId) {
-          axios.put(`${URL_BOS_CONFIG}/sendDataToAdmin`, this.credential).then((res) => {
-            if (res.status === 200) {
-              this.verifRegister = true;
-              Swal.fire({
+          return axios
+            .put(`${URL_BOS_CONFIG}/sendDataToAdmin`, this.credential)
+            .then((res) => {
+              if (res.status === 200) {
+                this.verifRegister = true;
+                return Swal.fire({
                   title: "Beau travail",
                   text: "Votre BOS a bien été enregistré",
                   type: "success",
                   confirmButtonClass: "md-button md-primary",
-                  buttonsStyling: false
+                  buttonsStyling: false,
                 });
-            }
-          });
+              }
+            });
         }
       }
       if (step === "other") {
-        console.log("here")
+        console.log("here");
         axios.put(`${URL_BOS_CONFIG}/otherSendData`).then((res) => {
           if (res) {
             console.log(res);
             if (res.status === 200) {
               Swal.fire({
-                  title: "Beau travail",
-                  text: "Les profils ont été mis à jour avec succès",
-                  type: "success",
-                  confirmButtonClass: "md-button md-primary",
-                  buttonsStyling: false
-                });
+                title: "Beau travail",
+                text: "Les profils ont été mis à jour avec succès",
+                type: "success",
+                confirmButtonClass: "md-button md-primary",
+                buttonsStyling: false,
+              });
             }
           }
         });

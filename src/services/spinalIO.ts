@@ -51,6 +51,7 @@ class SpinalIO {
     this.user = null;
     this.conn = null;
   }
+
   decriJson(encryptedHex: any) {
     try {
       const k = [
@@ -97,7 +98,6 @@ class SpinalIO {
       $(document).ready(() => {
         FileSystem.CONNECTOR_TYPE = 'Browser';
         const user = this.getauth();
-        console.log(user);
         if (user.username) {
           const serverHost = window.location.origin;
           return axios
@@ -156,8 +156,8 @@ class SpinalIO {
   async sharedModel(server_id: number, flag: number, name: string) {
     await this.connect();
     spinalCore.share_model(
-                        this.conn, server_id, "BOS", flag, name
-                    );
+      this.conn, server_id, "BOS", flag, name
+    );
   }
 
   async load(path: string): Promise<spinal.Model> {
