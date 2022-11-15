@@ -31,26 +31,29 @@ with this file. If not, see
       <br />
       <md-card>
         <md-card-header class="md-card-header-icon md-card-header-primary">
-          <h4 class="title"
-              v-if="display === false && changeDGT === true">
-            Sélectionner un DigitalTwin
-          </h4>
+          <div v-if="display === false && changeDGT === true">
+            <h4 class="title">
+              Sélectionner un DigitalTwin
+            </h4>
+            <md-button class="md-primary pull-right"
+                       @click="displayAdd">Nouveau DigitalTwin</md-button>
+          </div>
+
           <h4 class="title"
               v-if="display === true">
             Enregistrer votre DigitalTwin
           </h4>
-          <md-button class="md-primary pull-right"
-                     v-if="display === false && changeDGT === true"
-                     @click="displayAdd">Nouveau DigitalTwin</md-button>
+
         </md-card-header>
         <md-card-content>
           <div class="md-layout"
-               v-if="changeDGT === false">
+               v-if="changeDGT === false && actualDigitalTwin">
             <div class="md-layout-item md-size-10"></div>
             <div class="md-layout-item md-size-80">
               <h3 class="text-center">
                 Digital Twin en cours :
-                <label class="text-success"> {{ nameDigitalTwin }} </label>
+                <label class="text-success"> {{ actualDigitalTwin.name }}
+                </label>
               </h3>
               <br />
               <md-button @click="changeDigitalTwin"
@@ -61,7 +64,7 @@ with this file. If not, see
             <div class="md-layout-item md-size-10"></div>
           </div>
           <form @submit.prevent="validate"
-                v-if="display === false && changeDGT === true">
+                v-if="!actualDigitalTwin || display === false && changeDGT === true">
             <div>
               <div class="md-layout">
                 <div class="md-layout-item">
@@ -130,7 +133,6 @@ with this file. If not, see
 import Multiselect from "vue-multiselect";
 import {
   DATA_LIST_CONTEXT,
-  ADD_DIGITALTWIN,
   HUB_USER,
   URL_BOS_CONFIG,
   SPINALTWIN_ADMIN_SERVICE_APP_RELATION_TYPE_PTR_LST,
@@ -138,11 +140,7 @@ import {
 import axios from "axios";
 import { spinalIO } from "../../services/spinalIO";
 import { SpinalGraphService } from "spinal-env-viewer-graph-service";
-import {
-  Model,
-  spinalCore,
-  SpinalUserManager,
-} from "spinal-core-connectorjs_type";
+import { spinalCore, SpinalUserManager } from "spinal-core-connectorjs_type";
 export default {
   name: "Dashboard",
   components: { Multiselect },
@@ -151,7 +149,7 @@ export default {
       display: false,
       changeDGT: true,
       options: [],
-      nameDigitalTwin: "",
+      actualDigitalTwin: undefined,
       value: "",
       nameWithLang: "",
       graph: null,
@@ -165,22 +163,45 @@ export default {
       dataListContext: null,
     };
   },
-  beforeCreate: function () {
+  beforeCreate: async function () {
     if (this.$route.query.path) {
       const url = atob(this.$route.query.path);
       localStorage.setItem("urlSpinalTwinGraph", url);
       this.urlSpinalTwinAdmin = localStorage.getItem("urlSpinalTwinGraph");
     }
+    // await this.getActualDigitalTwin();
   },
   created: async function () {
+    await this.getActualDigitalTwin();
+
     const graph = await spinalIO.load(
       localStorage.getItem("urlSpinalTwinGraph")
     );
     await SpinalGraphService.setGraph(graph);
     this.dataListContext = SpinalGraphService.getContext(DATA_LIST_CONTEXT);
-    this.getDigitalTwin();
+    await this.getDigitalTwin();
   },
+
   methods: {
+    getActualDigitalTwin() {
+      axios
+        .get(`${URL_BOS_CONFIG}/actualDigitalTwin`)
+        .then((result) => {
+          if (result.status === 200) {
+            this.actualDigitalTwin = result.data;
+            localStorage.setItem(
+              "nameDigitalTwinCurrent",
+              this.actualDigitalTwin.name
+            );
+
+            localStorage.setItem("digitalGraphURL", this.actualDigitalTwin.url);
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+    },
+
     async getDigitalTwin() {
       if (this.dataListContext) {
         const children = await this.dataListContext.getChildren();
@@ -193,24 +214,35 @@ export default {
           };
         });
 
-        if (this.digitalList.length < 1) {
-          localStorage.removeItem("nameDigitalTwinCurrent");
-        } else if (localStorage.getItem("nameDigitalTwinCurrent")) {
-          this.nameDigitalTwin = localStorage.getItem("nameDigitalTwinCurrent");
-          this.changeDGT = false;
-          // await this.createUserHub();
-        }
+        if (this.actualDigitalTwin) this.changeDGT = false;
+
+        // if (this.digitalList.length < 1) {
+        //   localStorage.removeItem("nameDigitalTwinCurrent");
+        // } else if (localStorage.getItem("nameDigitalTwinCurrent")) {
+        //   this.nameDigitalTwin = localStorage.getItem("nameDigitalTwinCurrent");
+        //   this.changeDGT = false;
+        //   // await this.createUserHub();
+        // }
       }
 
       // return result;
     },
+
     async loadDigitalTwin() {
-      localStorage.setItem("nameDigitalTwinCurrent", this.value.name);
-      this.nameDigitalTwin = localStorage.getItem("nameDigitalTwinCurrent");
-      localStorage.setItem("digitalGraphURL", this.value.url);
-      this.changeDGT = false;
+      axios
+        .put(`${URL_BOS_CONFIG}/setDefaultDigitalTwin/${this.value.id}`)
+        .then(() => {
+          this.actualDigitalTwin = this.value;
+          localStorage.setItem("nameDigitalTwinCurrent", this.value.name);
+          this.nameDigitalTwin = localStorage.getItem("nameDigitalTwinCurrent");
+          localStorage.setItem("digitalGraphURL", this.value.url);
+          this.changeDGT = false;
+        })
+        .catch((err) => {});
+
       // await this.createUserHub();
     },
+
     displayAdd() {
       this.display = true;
     },
@@ -228,7 +260,8 @@ export default {
       const flag_WriteRead =
         spinalCore.right_flag.WR | spinalCore.right_flag.RD;
 
-      let graph = await spinalIO.load(localStorage.getItem("digitalGraphURL"));
+      // let graph = await spinalIO.load(localStorage.getItem("digitalGraphURL"));
+      let graph = await spinalIO.load(this.actualDigitalTwin?.url || "");
 
       let adminUser = { name: "SpinalAdmin", password: "" };
       let integrateurUser = { name: "Integrateur", password: "" };
@@ -283,7 +316,7 @@ export default {
           });
       });
 
-      console.log(await spinalIO.load("/etc/UserProfileDir"));
+      // console.log(await spinalIO.load("/etc/UserProfileDir"));
     },
     saveDigitalTwin() {
       if (this.digitalTwinData.name && this.digitalTwinData.url) {
