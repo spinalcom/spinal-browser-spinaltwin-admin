@@ -215,6 +215,8 @@ export default {
           };
         });
 
+        if (this.actualDigitalTwin) this.changeDGT = false;
+
         // if (this.digitalList.length < 1) {
         //   localStorage.removeItem("nameDigitalTwinCurrent");
         // } else if (localStorage.getItem("nameDigitalTwinCurrent")) {
