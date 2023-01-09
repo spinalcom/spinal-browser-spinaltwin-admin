@@ -31,7 +31,7 @@ with this file. If not, see
       <br />
       <md-card>
         <md-card-header class="md-card-header-icon md-card-header-primary">
-          <div v-if="display === false && changeDGT === true">
+          <div v-if="state === STATES.edition">
             <h4 class="title">
               Sélectionner un DigitalTwin
             </h4>
@@ -39,20 +39,26 @@ with this file. If not, see
                        @click="displayAdd">Nouveau DigitalTwin</md-button>
           </div>
 
-          <h4 class="title"
-              v-if="display === true">
-            Enregistrer votre DigitalTwin
-          </h4>
+          <div v-else-if="state === STATES.creation">
+            <h4 class="title">
+              Enregistrer votre DigitalTwin
+            </h4>
+          </div>
 
         </md-card-header>
         <md-card-content>
           <div class="md-layout"
-               v-if="changeDGT === false && actualDigitalTwin">
+               v-if="state === STATES.detail">
             <div class="md-layout-item md-size-10"></div>
             <div class="md-layout-item md-size-80">
               <h3 class="text-center">
                 Digital Twin en cours :
-                <label class="text-success"> {{ actualDigitalTwin.name }}
+                <label v-if="actualDigitalTwin"
+                       class="text-success"> {{ actualDigitalTwin.name }}
+                </label>
+
+                <label v-else
+                       class="text-success"> Pas de digitalTwin selectionné
                 </label>
               </h3>
               <br />
@@ -63,8 +69,9 @@ with this file. If not, see
             </div>
             <div class="md-layout-item md-size-10"></div>
           </div>
+
           <form @submit.prevent="validate"
-                v-if="!actualDigitalTwin || display === false && changeDGT === true">
+                v-else-if="state === STATES.edition">
             <div>
               <div class="md-layout">
                 <div class="md-layout-item">
@@ -87,9 +94,10 @@ with this file. If not, see
               </div>
             </div>
           </form>
+
           <form ref="form"
                 @submit.prevent="validate"
-                v-if="display === true">
+                v-else-if="state === STATES.creation">
             <div>
               <div class="md-layout">
                 <div class="md-layout-item">
@@ -145,9 +153,15 @@ export default {
   name: "Dashboard",
   components: { Multiselect },
   data() {
+    this.STATES = {
+      creation: 1,
+      edition: 2,
+      detail: 3,
+    };
     return {
+      state: this.STATES.detail,
       display: false,
-      changeDGT: true,
+      changeDGT: false,
       options: [],
       actualDigitalTwin: undefined,
       value: "",
@@ -173,10 +187,9 @@ export default {
   },
   created: async function () {
     await this.getActualDigitalTwin();
+    const url = localStorage.getItem("urlSpinalTwinGraph");
 
-    const graph = await spinalIO.load(
-      localStorage.getItem("urlSpinalTwinGraph")
-    );
+    const graph = await spinalIO.load(url);
     await SpinalGraphService.setGraph(graph);
     this.dataListContext = SpinalGraphService.getContext(DATA_LIST_CONTEXT);
     await this.getDigitalTwin();
@@ -214,7 +227,11 @@ export default {
           };
         });
 
-        if (this.actualDigitalTwin) this.changeDGT = false;
+        this.state = this.actualDigitalTwin
+          ? this.state.detail
+          : this.STATES.edition;
+
+        // if (this.actualDigitalTwin) this.changeDGT = false;
 
         // if (this.digitalList.length < 1) {
         //   localStorage.removeItem("nameDigitalTwinCurrent");
@@ -240,18 +257,27 @@ export default {
         })
         .catch((err) => {});
 
+      this.state = this.actualDigitalTwin
+        ? this.state.detail
+        : this.STATES.edition;
+
       // await this.createUserHub();
     },
 
     displayAdd() {
+      this.state = this.STATES.creation;
       this.display = true;
     },
+
     changeDigitalTwin() {
+      this.state = this.STATES.edition;
       this.changeDGT = true;
     },
+
     cancelAdd() {
       this.display = false;
       this.$refs.form.reset();
+      this.state = this.STATES.detail;
     },
     async createUserHub() {
       let context = SpinalGraphService.getContext(HUB_USER);
@@ -333,6 +359,8 @@ export default {
             console.error(e);
             return Promise.reject(Error("Internal Server Error"));
           });
+
+        this.state = this.STATES.edition;
 
         /*const nodeId = SpinalGraphService.createNode(
           this.digitalTwinData,
