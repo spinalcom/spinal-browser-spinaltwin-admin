@@ -163,18 +163,17 @@ export default {
       dataListContext: null,
     };
   },
-  beforeMount: async function () {
+  beforeCreate: async function () {
     if (this.$route.query.path) {
       const url = atob(this.$route.query.path);
       localStorage.setItem("urlSpinalTwinGraph", url);
       this.urlSpinalTwinAdmin = localStorage.getItem("urlSpinalTwinGraph");
-    } else if (localStorage.getItem("urlSpinalTwinGraph")) {
-      this.urlSpinalTwinAdmin = localStorage.getItem("urlSpinalTwinGraph");
     }
     // await this.getActualDigitalTwin();
   },
-  async mounted() {
+  created: async function () {
     await this.getActualDigitalTwin();
+
     const graph = await spinalIO.load(
       localStorage.getItem("urlSpinalTwinGraph")
     );
@@ -194,7 +193,7 @@ export default {
               "nameDigitalTwinCurrent",
               this.actualDigitalTwin.name
             );
-            if (this.actualDigitalTwin) this.changeDGT = false;
+
             localStorage.setItem("digitalGraphURL", this.actualDigitalTwin.url);
           }
         })
@@ -214,6 +213,8 @@ export default {
             url: rep.info.url?.get(),
           };
         });
+
+        if (this.actualDigitalTwin) this.changeDGT = false;
 
         // if (this.digitalList.length < 1) {
         //   localStorage.removeItem("nameDigitalTwinCurrent");
